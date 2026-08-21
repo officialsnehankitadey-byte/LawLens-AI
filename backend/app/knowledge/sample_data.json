@@ -1,0 +1,110 @@
+{
+  "demo_scenarios": {
+    "consumer": {
+      "situation_summary": "The user purchased an online product that was delivered damaged, and the seller refused a refund.",
+      "detected_issue": "Defective Goods & Refusal of Mandatory Refund under Consumer Protection Act",
+      "applicable_rights_or_schemes": [
+        {
+          "topic": "Consumer Protection Act, 2019 — Right to Redressal",
+          "explanation": "Consumers are entitled to receive refunds or replacements for damaged or sub-standard products.",
+          "relevance_reason": "Directly applies to e-commerce purchases delivered in a damaged state.",
+          "authority": "District Consumer Disputes Redressal Commission (NCH)",
+          "action_recommended": "File a formal complaint on the National Consumer Helpline (NCH) or send a legal notice.",
+          "source_url": "https://consumerhelpline.gov.in"
+        }
+      ],
+      "action_plan": {
+        "immediate_action": "Preserve all proof of purchase, order numbers, unboxing photos/videos, and communication history with the seller.",
+        "ordered_steps": [
+          {
+            "step_number": 1,
+            "title": "Gather Evidence & Tax Invoice",
+            "description": "Compile invoice, delivery receipt, photos of damaged goods, and seller refusal emails.",
+            "why_it_matters": "Required to prove purchase and timely notification of grievance.",
+            "required_documents": ["Invoice PDF", "Photos of damaged item", "Seller email response"]
+          },
+          {
+            "step_number": 2,
+            "title": "Register Complaint on National Consumer Helpline (NCH)",
+            "description": "Lodge an online grievance via consumerhelpline.gov.in or calling 1915.",
+            "why_it_matters": "Fastest non-judicial resolution mechanism supported by government.",
+            "authority": "National Consumer Helpline",
+            "submission_method": "Online Portal / Call 1915"
+          },
+          {
+            "step_number": 3,
+            "title": "Escalate to District Consumer Forum",
+            "description": "If unresolved within 15 days, file a formal complaint on the e-Daakhil portal.",
+            "why_it_matters": "Legal escalation forcing legal remedy and compensation.",
+            "authority": "District Consumer Commission",
+            "submission_method": "e-Daakhil Portal"
+          }
+        ],
+        "required_documents": ["Purchase Invoice", "Photos of Damaged Item", "Communication Log with Seller", "Bank/Payment Transaction Statement"],
+        "target_authority": "National Consumer Helpline / District Consumer Forum",
+        "expected_timeline": "7-14 days for NCH mediation",
+        "warnings": ["Do not throw away original packaging.", "Keep track of 30-day return policy window."]
+      },
+      "recommended_draft_type": "consumer_complaint",
+      "sources": [
+        {
+          "source_name": "Consumer Protection Act 2019",
+          "title": "Rights of Consumers — Product Liability & Deficiency in Service",
+          "url": "https://consumerhelpline.gov.in",
+          "relevance": "High",
+          "verification_status": "verified"
+        }
+      ],
+      "disclaimer": "This is a civic information synthesis provided for educational purposes. Verify details on official government portals."
+    },
+    "rti": {
+      "situation_summary": "User seeks information regarding public fund allocation and progress on a local municipal infrastructure project.",
+      "detected_issue": "Request for Information under Right to Information Act, 2005",
+      "applicable_rights_or_schemes": [
+        {
+          "topic": "Right to Information (RTI) Act, 2005",
+          "explanation": "Citizens have the legal right to request records, expenditure details, and sanction letters from public authorities.",
+          "relevance_reason": "Applies directly to municipal works, local bodies, and government departments.",
+          "authority": "Public Information Officer (PIO), Local Municipal Corporation",
+          "action_recommended": "Submit a formal RTI Application along with the prescribed fee (Rs. 10).",
+          "source_url": "https://rtionline.gov.in"
+        }
+      ],
+      "action_plan": {
+        "immediate_action": "Identify the exact Public Authority / Department responsible for the local road/infrastructure project.",
+        "ordered_steps": [
+          {
+            "step_number": 1,
+            "title": "Draft Specific RTI Questions",
+            "description": "Frame concise, unambiguous questions regarding tender details, budget allocated, contractor name, and completion deadline.",
+            "why_it_matters": "Vague questions allow public officers to delay responses.",
+            "required_documents": ["Location map or project photos"]
+          },
+          {
+            "step_number": 2,
+            "title": "Submit RTI to Public Information Officer (PIO)",
+            "description": "Submit via RTI Online portal or registered post with Rs. 10 court fee stamp / IPO.",
+            "why_it_matters": "Mandates a legal response within 30 days.",
+            "authority": "PIO, Municipal Corporation",
+            "submission_method": "RTI Online / Registered Post"
+          }
+        ],
+        "required_documents": ["RTI Form", "Proof of Identity", "Rs. 10 Application Fee Receipt"],
+        "target_authority": "Public Information Officer (PIO)",
+        "expected_timeline": "30 days mandatory turnaround",
+        "warnings": ["Questions must ask for existing record details, not opinions or explanations."]
+      },
+      "recommended_draft_type": "rti",
+      "sources": [
+        {
+          "source_name": "RTI Act 2005",
+          "title": "Section 6 — Request for obtaining information",
+          "url": "https://rtionline.gov.in",
+          "relevance": "High",
+          "verification_status": "verified"
+        }
+      ],
+      "disclaimer": "This RTI guide provides standard legal templates. Ensure correct PIO address before mailing."
+    }
+  }
+}
