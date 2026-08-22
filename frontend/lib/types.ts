@@ -77,6 +77,7 @@ export interface DocumentAnalysisResponse {
   explicit_dates: string[];
   explicit_deadlines: string[];
   identified_issues: string[];
+  required_documents: string[];
   recommended_actions: string[];
   recommended_draft_type?: string;
   is_demo: boolean;

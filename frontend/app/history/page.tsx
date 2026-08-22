@@ -18,13 +18,16 @@ export default function HistoryPage() {
     const items: HistoryItem[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith("analysis_")) {
+      if (key && (key.startsWith("analysis_") || key.startsWith("doc_analysis_"))) {
         try {
           const val = JSON.parse(localStorage.getItem(key) || "");
+          const isDoc = key.startsWith("doc_analysis_") || "filename" in val;
+          const rawId = val.id || key.replace(/^(analysis_|doc_analysis_)/, "");
+          const docId = rawId.startsWith("doc_") ? rawId : `doc_${rawId}`;
           items.push({
-            id: val.id,
-            detected_issue: val.detected_issue || "Civic Analysis",
-            category: val.category || "General",
+            id: isDoc ? docId : rawId,
+            detected_issue: isDoc ? (val.filename || val.identified_issues?.[0] || "Document Analysis") : (val.detected_issue || "Civic Analysis"),
+            category: isDoc ? (val.document_type || "Document") : (val.category || "General"),
             timestamp: new Date().toLocaleDateString("en-IN"),
           });
         } catch {

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { generateDraft } from "@/lib/api";
 import { DraftResponse } from "@/lib/types";
 import { Copy, Download, RefreshCw, FileText, Check, AlertCircle } from "lucide-react";
 
-export default function DraftPage() {
+function DraftForm() {
   const searchParams = useSearchParams();
   const draftType = searchParams.get("type") || "rti";
   const summaryParam = searchParams.get("summary") || "Sample grievance description regarding public service deficiency.";
@@ -135,5 +135,17 @@ export default function DraftPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DraftPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-16 text-center text-slate-500">
+        Loading draft generator...
+      </div>
+    }>
+      <DraftForm />
+    </Suspense>
   );
 }

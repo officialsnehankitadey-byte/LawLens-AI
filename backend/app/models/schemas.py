@@ -48,6 +48,11 @@ class ActionPlan(BaseModel):
     expected_timeline: Optional[str] = None
     warnings: List[str] = []
 
+class EvidenceItem(BaseModel):
+    item: str
+    status: str  # e.g., "Available", "Not provided", "Not established"
+
+# Updated SituationAnalysisResponse with evidence status
 class SituationAnalysisResponse(BaseModel):
     id: str
     situation_summary: str
@@ -60,6 +65,8 @@ class SituationAnalysisResponse(BaseModel):
     sources: List[SourceReference] = []
     disclaimer: str
     is_demo: bool = False
+    evidence_status: List[EvidenceItem] = []
+
 
 # --- Document Analysis ---
 class ExtractedFact(BaseModel):
@@ -75,6 +82,7 @@ class DocumentAnalysisResponse(BaseModel):
     explicit_dates: List[str] = []
     explicit_deadlines: List[str] = []
     identified_issues: List[str] = []
+    required_documents: List[str] = []
     recommended_actions: List[str] = []
     recommended_draft_type: Optional[str] = None
     is_demo: bool = False

@@ -9,8 +9,8 @@ app = FastAPI(
     description="LawLens AI Backend — Action Engine for Civic and Legal Empowerment"
 )
 
-# Configure CORS Middleware
-origins = [origin.strip() for origin in settings.CORS_ORIGINS]
+# Configure CORS Middleware safely
+origins = settings.get_cors_origins()
 
 app.add_middleware(
     CORSMiddleware,

@@ -2,13 +2,13 @@
   "demo_scenarios": {
     "consumer": {
       "situation_summary": "The user purchased an online product that was delivered damaged, and the seller refused a refund.",
-      "detected_issue": "Defective Goods & Refusal of Mandatory Refund under Consumer Protection Act",
+      "detected_issue": "Defective Goods & Consumer Redressal under Consumer Protection Act",
       "applicable_rights_or_schemes": [
         {
           "topic": "Consumer Protection Act, 2019 — Right to Redressal",
-          "explanation": "Consumers are entitled to receive refunds or replacements for damaged or sub-standard products.",
+          "explanation": "The Consumer Protection Act, 2019 provides consumers with rights and potential remedies, which may include repair, replacement, refund, or compensation depending on the facts and applicable law.",
           "relevance_reason": "Directly applies to e-commerce purchases delivered in a damaged state.",
-          "authority": "District Consumer Disputes Redressal Commission (NCH)",
+          "authority": "Consumer Commission having appropriate jurisdiction (NCH)",
           "action_recommended": "File a formal complaint on the National Consumer Helpline (NCH) or send a legal notice.",
           "source_url": "https://consumerhelpline.gov.in"
         }
@@ -26,23 +26,24 @@
           {
             "step_number": 2,
             "title": "Register Complaint on National Consumer Helpline (NCH)",
-            "description": "Lodge an online grievance via consumerhelpline.gov.in or calling 1915.",
-            "why_it_matters": "Fastest non-judicial resolution mechanism supported by government.",
+            "description": "NCH provides a government-operated pre-litigation grievance redress mechanism that can facilitate resolution with the concerned company.",
+            "why_it_matters": "Pre-litigation grievance redress mechanism supported by government.",
             "authority": "National Consumer Helpline",
-            "submission_method": "Online Portal / Call 1915"
+            "submission_method": "Online Portal (consumerhelpline.gov.in) / Call 1915"
           },
           {
             "step_number": 3,
-            "title": "Escalate to District Consumer Forum",
-            "description": "If unresolved within 15 days, file a formal complaint on the e-Daakhil portal.",
-            "why_it_matters": "Legal escalation forcing legal remedy and compensation.",
-            "authority": "District Consumer Commission",
+            "title": "Consider Escalation to the Appropriate Consumer Commission",
+            "description": "After submitting the requested evidence, if the issue remains unresolved, consider filing a formal complaint on the e-Daakhil portal with the appropriate Consumer Commission.",
+            "why_it_matters": "Legal escalation may compel resolution and compensation through formal adjudication.",
+            "authority": "Consumer Commission (District / State as applicable)",
             "submission_method": "e-Daakhil Portal"
           }
         ],
-        "required_documents": ["Purchase Invoice", "Photos of Damaged Item", "Communication Log with Seller", "Bank/Payment Transaction Statement"],
-        "target_authority": "National Consumer Helpline / District Consumer Forum",
-        "expected_timeline": "7-14 days for NCH mediation",
+        "required_documents": ["Purchase Invoice", "Photos of Damaged Item", "Communication Log with Seller"],
+        "optional_supporting_documents": ["Bank/Payment Transaction Statement"],
+        "target_authority": "National Consumer Helpline / Appropriate Consumer Commission",
+        "expected_timeline": "7-14 days for NCH grievance redressal",
         "warnings": ["Do not throw away original packaging.", "Keep track of 30-day return policy window."]
       },
       "recommended_draft_type": "consumer_complaint",

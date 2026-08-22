@@ -8,6 +8,8 @@ from app.models.schemas import (
     DraftRequest, DraftResponse
 )
 
+from app.services.document.analyzer import DocumentAnalyzer
+
 class FallbackProvider(AIProvider):
     """
     Deterministic Fallback & Demo Provider for offline / API key-less operations.
@@ -24,89 +26,28 @@ class FallbackProvider(AIProvider):
                 self.sample_data = {}
 
     async def analyze_problem(self, request: ProblemRequest) -> SituationAnalysisResponse:
-        cat = request.category.lower() if request.category else "consumer"
-        data = self.sample_data.get(cat, self.sample_data.get("consumer"))
-
-        if data:
-            rights = [RightOrSchemeItem(**item) for item in data["applicable_rights_or_schemes"]]
-            steps = [ActionStep(**s) for s in data["action_plan"]["ordered_steps"]]
-            plan = ActionPlan(
-                immediate_action=data["action_plan"]["immediate_action"],
-                ordered_steps=steps,
-                required_documents=data["action_plan"]["required_documents"],
-                target_authority=data["action_plan"].get("target_authority"),
-                expected_timeline=data["action_plan"].get("expected_timeline"),
-                warnings=data["action_plan"].get("warnings", [])
-            )
-            sources = [SourceReference(**s) for s in data.get("sources", [])]
-
-            return SituationAnalysisResponse(
-                id=str(uuid.uuid4()),
-                situation_summary=f"[Demo Analysis] {request.problem[:120]}...",
-                detected_issue=data["detected_issue"],
-                category=request.category,
-                applicable_rights_or_schemes=rights,
-                action_plan=plan,
-                recommended_draft_type=data.get("recommended_draft_type", "consumer_complaint"),
-                sources=sources,
-                disclaimer=data["disclaimer"],
-                is_demo=True
-            )
-        
-        # Generic fallback
+        """Deterministic fallback analysis using only the user's problem description.
+        No demo data is used."""
+        summary = f"Analysis of situation: {request.problem[:200]}"
         return SituationAnalysisResponse(
             id=str(uuid.uuid4()),
-            situation_summary=f"Analysis of situation: {request.problem}",
+            situation_summary=summary,
             detected_issue="Civic/Government Service Inquiry",
             category=request.category,
-            applicable_rights_or_schemes=[
-                RightOrSchemeItem(
-                    topic="General Right to Grievance Redressal",
-                    explanation="Citizens have the right to file formal representations or grievances to responsible public authorities.",
-                    relevance_reason="Applies to general administrative and civic inquiries.",
-                    action_recommended="Draft a formal representation letter."
-                )
-            ],
+            applicable_rights_or_schemes=[],
             action_plan=ActionPlan(
                 immediate_action="Gather all facts, dates, and documentation regarding your issue.",
-                ordered_steps=[
-                    ActionStep(
-                        step_number=1,
-                        title="Document Key Events",
-                        description="Write down a chronological timeline of events and relevant dates.",
-                        why_it_matters="Essential for providing clear context when contacting officials."
-                    ),
-                    ActionStep(
-                        step_number=2,
-                        title="Identify Relevant Authority",
-                        description="Determine the appropriate local, state, or central department.",
-                        why_it_matters="Ensures your submission reaches the decision-making authority."
-                    )
-                ],
-                required_documents=["Proof of Identity", "Written Summary of Issue", "Supporting Notices/Receipts"]
+                ordered_steps=[],
+                required_documents=[]
             ),
             recommended_draft_type="grievance",
+            sources=[],
             disclaimer="Fallback Demo Mode: This response is generated deterministically for testing without API keys.",
             is_demo=True
         )
 
     async def analyze_document(self, filename: str, content: str) -> DocumentAnalysisResponse:
-        return DocumentAnalysisResponse(
-            id=str(uuid.uuid4()),
-            filename=filename,
-            document_type="Civic / Official Document",
-            summary=f"Extracted content summary for uploaded file '{filename}' ({len(content)} characters parsed).",
-            extracted_facts=[
-                ExtractedFact(fact=f"Document uploaded: {filename}", confidence="high"),
-                ExtractedFact(fact="Document text extracted successfully", confidence="high")
-            ],
-            explicit_dates=["2026-08-20"],
-            explicit_deadlines=["Within 15 days of notice receipt"],
-            identified_issues=["Pending Action / Verification Required"],
-            recommended_actions=["Review key facts", "Prepare draft response if required"],
-            recommended_draft_type="appeal",
-            is_demo=True
-        )
+        return DocumentAnalyzer.analyze(filename, content)
 
     async def generate_draft(self, request: DraftRequest) -> DraftResponse:
         title_map = {
