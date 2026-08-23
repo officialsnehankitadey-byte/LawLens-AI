@@ -1,43 +1,66 @@
 import Link from "next/link";
-import { Compass, ShieldCheck } from "lucide-react";
+import { Scale, ShieldCheck } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 py-8 text-slate-600 dark:text-slate-400 transition-colors duration-200">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-3 md:col-span-2">
-            <div className="flex items-center gap-2 font-bold text-lg text-primary dark:text-blue-400">
-              <Compass className="h-5 w-5 text-accent" />
-              <span>LawLens AI</span>
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-              An AI-powered civic and legal action engine designed to transform civic confusion into plain-language clarity, source-backed evidence, concrete action plans, and editable draft applications.
+    <footer className="border-t border-surface-border bg-[#0A0A0A] py-10">
+      <div className="mx-auto max-w-screen-xl px-4 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+
+          {/* Brand column */}
+          <div className="space-y-4 md:col-span-2">
+            <Link href="/" className="flex items-center gap-2 select-none w-fit">
+              <div className="flex items-center justify-center h-7 w-7 rounded bg-brand shrink-0">
+                <Scale className="h-4 w-4 text-base-950" strokeWidth={2.5} />
+              </div>
+              <span className="font-bold text-base text-text-primary tracking-tight">
+                LawLens <span className="text-brand">AI</span>
+              </span>
+            </Link>
+            <p className="text-sm text-text-secondary max-w-sm leading-relaxed">
+              An AI-powered civic and legal action engine. Transforms complex government procedures and notices into plain-language rights, structured action plans, and editable draft applications.
             </p>
           </div>
 
+          {/* Quick links */}
           <div>
-            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3 text-sm">Quick Links</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/analyze" className="hover:text-primary dark:hover:text-blue-400 transition-colors">Problem Analyzer</Link></li>
-              <li><Link href="/document" className="hover:text-primary dark:hover:text-blue-400 transition-colors">Document Analyzer</Link></li>
-              <li><Link href="/draft" className="hover:text-primary dark:hover:text-blue-400 transition-colors">Draft Generator</Link></li>
-              <li><Link href="/history" className="hover:text-primary dark:hover:text-blue-400 transition-colors">Analysis History</Link></li>
+            <h4 className="section-label mb-4">Quick Links</h4>
+            <ul className="space-y-2.5 text-sm">
+              {[
+                { href: "/analyze",  label: "Problem Analyzer" },
+                { href: "/document", label: "Document Analyzer" },
+                { href: "/draft",    label: "Draft Generator" },
+                { href: "/history",  label: "Analysis History" },
+                { href: "/about",    label: "About" },
+              ].map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-text-secondary hover:text-text-primary transition-colors duration-150"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Disclaimer */}
           <div>
-            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3 text-sm">Trust & Disclaimer</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              LawLens provides general civic information and action assistance. It does not provide legal advice or replace qualified professional counsel.
-            </p>
+            <h4 className="section-label mb-4">Disclaimer</h4>
+            <div className="flex items-start gap-2">
+              <ShieldCheck className="h-4 w-4 text-brand shrink-0 mt-0.5" />
+              <p className="text-xs text-text-muted leading-relaxed">
+                LawLens provides general civic information and action assistance. It does not provide legal advice or replace qualified professional counsel.
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-          <p>© {new Date().getFullYear()} LawLens AI — Track 3: AI for Civic & Legal Empowerment</p>
-          <p>Built for Civic Empowerment</p>
+        {/* Bottom bar */}
+        <div className="mt-10 pt-6 border-t border-surface-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-muted">
+          <p>© {new Date().getFullYear()} LawLens AI — Track 3: AI for Civic &amp; Legal Empowerment</p>
+          <p className="text-text-muted">Built for Civic Empowerment</p>
         </div>
       </div>
     </footer>

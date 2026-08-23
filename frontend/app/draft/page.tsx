@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { generateDraft } from "@/lib/api";
 import { DraftResponse } from "@/lib/types";
-import { Copy, Download, RefreshCw, FileText, Check, AlertCircle } from "lucide-react";
+import { Copy, Download, RefreshCw, FileText, Check, AlertCircle, Loader2 } from "lucide-react";
 
 function DraftForm() {
   const searchParams = useSearchParams();
@@ -55,85 +55,115 @@ function DraftForm() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-4xl space-y-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Draft Generator</h1>
-          <p className="text-slate-600 dark:text-slate-300 text-sm">Editable civic document draft tailored for your problem.</p>
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16 space-y-6">
+
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+        <div className="space-y-1">
+          <p className="section-label">Generated Document</p>
+          <h1 className="page-title text-3xl">Draft Generator</h1>
+          <p className="page-subtitle mt-1">Editable civic document draft — tailored for your situation.</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleCopy}
             disabled={!content}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            id="draft-copy"
+            className="btn-secondary text-xs gap-1.5"
           >
-            {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copied" : "Copy Text"}
+            {copied ? <Check className="h-3.5 w-3.5 text-success-text" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy"}
           </button>
-
           <button
             onClick={handleDownload}
             disabled={!content}
-            className="flex items-center gap-1.5 px-3 py-2 bg-primary dark:bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-primary-hover dark:hover:bg-blue-500 transition-colors"
+            id="draft-download"
+            className="btn-primary text-xs gap-1.5"
           >
-            <Download className="h-4 w-4" />
-            Download Text
+            <Download className="h-3.5 w-3.5" />
+            Download
           </button>
         </div>
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-sm flex items-center gap-2 border border-red-200 dark:border-red-800">
+        <div className="flex items-center gap-2.5 p-3.5 rounded-md bg-danger-muted border border-danger-border text-danger-text text-sm animate-fade-in">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
+      {/* Document panel */}
       {loading ? (
-        <div className="bg-white dark:bg-slate-800 p-12 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-center space-y-3">
-          <RefreshCw className="h-8 w-8 text-primary dark:text-blue-400 animate-spin mx-auto" />
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Generating customized document draft...</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-24 rounded-md bg-surface border border-surface-border">
+          <Loader2 className="h-7 w-7 text-brand animate-spin" />
+          <p className="text-sm text-text-secondary">Generating customised document draft…</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
-            <h2 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
-              <FileText className="h-5 w-5 text-accent" />
-              {draft?.title || "Civic Document Draft"}
-            </h2>
+        <div className="rounded-md bg-surface border border-surface-border overflow-hidden">
+
+          {/* Document toolbar */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-surface-border bg-surface-raised">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center h-7 w-7 rounded bg-brand/10 border border-brand/20">
+                <FileText className="h-4 w-4 text-brand" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-primary leading-tight">
+                  {draft?.title || "Civic Document Draft"}
+                </p>
+                <p className="text-xs text-text-muted capitalize">{draftType.replace(/_/g, " ")}</p>
+              </div>
+            </div>
             <button
               onClick={loadDraft}
-              className="text-xs text-primary dark:text-blue-400 hover:underline flex items-center gap-1"
+              id="draft-regenerate"
+              className="btn-ghost text-xs gap-1.5"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Regenerate
             </button>
           </div>
 
+          {/* Editable content */}
           <textarea
-            rows={18}
+            rows={22}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full p-4 font-mono text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-blue-500/20 text-slate-800 dark:text-slate-100"
+            className="w-full p-6 font-mono text-sm bg-[#111111] text-text-primary placeholder:text-text-muted leading-relaxed focus:outline-none resize-none"
+            placeholder="Your document draft will appear here…"
           />
 
+          {/* Placeholders note */}
           {draft?.placeholders_used && draft.placeholders_used.length > 0 && (
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/50 rounded-lg border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 space-y-1">
-              <strong>Placeholders to replace:</strong>
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {draft.placeholders_used.map((p, i) => (
-                  <span key={i} className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700 font-mono">
-                    {p}
-                  </span>
-                ))}
+            <div className="px-5 py-3.5 border-t border-surface-border bg-warning-muted/30">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-3.5 w-3.5 text-warning-text shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-warning-text">Placeholders to replace before submitting:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {draft.placeholders_used.map((p, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded bg-surface-raised border border-warning-border text-warning-text font-mono text-[11px]">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 text-center italic">{draft?.disclaimer}</p>
+          {/* Disclaimer */}
+          {draft?.disclaimer && (
+            <div className="px-5 py-3.5 border-t border-surface-border">
+              <p className="text-xs text-text-muted italic text-center">{draft.disclaimer}</p>
+            </div>
+          )}
         </div>
       )}
+
     </div>
   );
 }
@@ -141,8 +171,11 @@ function DraftForm() {
 export default function DraftPage() {
   return (
     <Suspense fallback={
-      <div className="container mx-auto px-4 py-16 text-center text-slate-500 dark:text-slate-400">
-        Loading draft generator...
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 text-brand animate-spin mx-auto" />
+          <p className="text-sm text-text-secondary">Loading draft generator…</p>
+        </div>
       </div>
     }>
       <DraftForm />

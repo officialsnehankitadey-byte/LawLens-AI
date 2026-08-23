@@ -3,17 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { analyzeDocument } from "@/lib/api";
-import { UploadCloud, FileText, Sparkles, AlertCircle } from "lucide-react";
+import { UploadCloud, FileText, Loader2, AlertCircle, X } from "lucide-react";
 
 export default function DocumentPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setError("");
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) {
+      setFile(dropped);
       setError("");
     }
   };
@@ -38,61 +49,121 @@ export default function DocumentPage() {
     }
   };
 
+  const clearFile = () => setFile(null);
+
   return (
-    <div className="container mx-auto px-4 py-10 max-w-3xl space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Document Analyzer</h1>
-        <p className="text-slate-600 dark:text-slate-300 text-sm">Upload a government notice, rejection letter, or civic contract (PDF, DOCX, TXT) to extract key dates, deadlines, and next actions.</p>
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
+
+      {/* Page header */}
+      <div className="mb-8 space-y-1">
+        <p className="section-label">Document Intelligence</p>
+        <h1 className="page-title text-3xl">Document Analyzer</h1>
+        <p className="page-subtitle mt-2">
+          Upload a government notice, rejection letter, or civic contract to extract key dates, deadlines, required actions, and relevant rights.
+        </p>
       </div>
 
-      <form onSubmit={handleUpload} className="bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+      <form onSubmit={handleUpload} className="space-y-5">
+
+        {/* Error */}
         {error && (
-          <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-sm flex items-center gap-2 border border-red-200 dark:border-red-800">
+          <div className="flex items-center gap-2.5 p-3.5 rounded-md bg-danger-muted border border-danger-border text-danger-text text-sm animate-fade-in">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center space-y-4 hover:border-primary/50 dark:hover:border-blue-400/50 transition-colors bg-slate-50 dark:bg-slate-900/60">
-          <UploadCloud className="h-12 w-12 text-slate-400 dark:text-slate-500 mx-auto" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Click to upload or drag and drop</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">PDF, DOCX, or TXT (Max 10MB)</p>
+        {/* Upload zone */}
+        <label
+          htmlFor="file-upload"
+          onDrop={handleDrop}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          className={`relative flex flex-col items-center justify-center gap-4 p-12 rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 ${
+            isDragOver
+              ? "border-brand bg-brand/8 scale-[1.01]"
+              : "border-surface-border bg-surface hover:border-brand/40 hover:bg-brand/4"
+          }`}
+        >
+          <div className={`flex items-center justify-center h-12 w-12 rounded-full border border-surface-border transition-colors duration-200 ${
+            isDragOver ? "bg-brand/15 border-brand/40" : "bg-surface-raised"
+          }`}>
+            <UploadCloud className={`h-6 w-6 transition-colors duration-200 ${isDragOver ? "text-brand" : "text-text-muted"}`} />
           </div>
+
+          <div className="text-center space-y-1">
+            <p className="text-sm font-medium text-text-primary">
+              Drop your file here, or{" "}
+              <span className="text-brand underline underline-offset-2">browse</span>
+            </p>
+            <p className="text-xs text-text-muted">PDF, DOCX, or TXT — maximum 10 MB</p>
+          </div>
+
           <input
+            id="file-upload"
             type="file"
             accept=".pdf,.docx,.txt"
             onChange={handleFileChange}
-            className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white dark:file:bg-blue-600 hover:file:bg-primary-hover cursor-pointer"
+            className="sr-only"
           />
-        </div>
+        </label>
 
+        {/* Selected file */}
         {file && (
-          <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 rounded-lg text-sm border border-blue-200 dark:border-blue-800">
-            <FileText className="h-4 w-4 text-primary dark:text-blue-400 shrink-0" />
-            <span className="font-medium truncate">{file.name}</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">({(file.size / 1024).toFixed(1)} KB)</span>
+          <div className="flex items-center justify-between gap-3 p-3.5 rounded-md bg-surface-raised border border-surface-border animate-fade-in">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center justify-center h-8 w-8 rounded bg-brand/10 border border-brand/20 shrink-0">
+                <FileText className="h-4 w-4 text-brand" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-text-primary truncate">{file.name}</p>
+                <p className="text-xs text-text-muted">{(file.size / 1024).toFixed(1)} KB</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearFile}
+              className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors shrink-0"
+              aria-label="Remove file"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         )}
 
+        {/* Submit */}
         <button
           type="submit"
+          id="document-submit"
           disabled={loading || !file}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-primary text-white font-medium hover:bg-primary-hover dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors shadow-sm disabled:opacity-50 text-sm"
+          className="btn-primary w-full py-3 text-sm"
         >
           {loading ? (
             <>
-              <Sparkles className="h-4 w-4 animate-spin" />
-              Extracting Document & Deadlines...
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Extracting content &amp; deadlines…
             </>
           ) : (
             <>
               <FileText className="h-4 w-4" />
-              Analyze Document Content
+              Analyze Document
             </>
           )}
         </button>
       </form>
+
+      {/* Supported types note */}
+      <div className="mt-8 pt-7 border-t border-surface-border">
+        <p className="section-label mb-3">Supported Document Types</p>
+        <div className="flex flex-wrap gap-2">
+          {["Government Notices", "Rejection Letters", "RTI Responses", "Tax Notices", "Civic Contracts", "Legal Letters"].map((t) => (
+            <span key={t} className="text-xs px-3 py-1.5 rounded-md bg-surface-raised border border-surface-border text-text-secondary">
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 }

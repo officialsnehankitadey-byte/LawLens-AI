@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { History as HistoryIcon, Trash2, ArrowRight, ShieldAlert } from "lucide-react";
+import { History as HistoryIcon, Trash2, ArrowRight, Search, FileText } from "lucide-react";
 
 interface HistoryItem {
   id: string;
   detected_issue: string;
   category: string;
   timestamp: string;
+  isDocument: boolean;
 }
 
 export default function HistoryPage() {
@@ -26,9 +27,12 @@ export default function HistoryPage() {
           const docId = rawId.startsWith("doc_") ? rawId : `doc_${rawId}`;
           items.push({
             id: isDoc ? docId : rawId,
-            detected_issue: isDoc ? (val.filename || val.identified_issues?.[0] || "Document Analysis") : (val.detected_issue || "Civic Analysis"),
+            detected_issue: isDoc
+              ? (val.filename || val.identified_issues?.[0] || "Document Analysis")
+              : (val.detected_issue || "Civic Analysis"),
             category: isDoc ? (val.document_type || "Document") : (val.category || "General"),
             timestamp: new Date().toLocaleDateString("en-IN"),
+            isDocument: isDoc,
           });
         } catch {
           // ignore parsing errors
@@ -51,63 +55,96 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-4xl space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16 space-y-8">
+
+      {/* Header */}
+      <div className="flex items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <HistoryIcon className="h-7 w-7 text-primary dark:text-blue-400" />
+          <p className="section-label">Browser Storage</p>
+          <h1 className="page-title text-3xl flex items-center gap-2.5">
+            <HistoryIcon className="h-7 w-7 text-brand" />
             Analysis History
           </h1>
-          <p className="text-slate-600 dark:text-slate-300 text-sm">View recent civic problem analyses saved locally in your browser.</p>
+          <p className="page-subtitle mt-1">
+            Recent civic and document analyses saved locally in your browser.
+          </p>
         </div>
 
         {history.length > 0 && (
           <button
             onClick={clearHistory}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900/60 rounded-lg transition-colors border border-red-200 dark:border-red-800"
+            id="history-clear"
+            className="btn-danger text-xs shrink-0"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Clear History
+            Clear All
           </button>
         )}
       </div>
 
+      {/* Empty state */}
       {history.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 p-12 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-4 shadow-sm">
-          <ShieldAlert className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <div className="space-y-1">
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200">No History Saved</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">You haven't run any problem or document analyses yet.</p>
+        <div className="flex flex-col items-center justify-center gap-5 py-20 rounded-md bg-surface border border-surface-border text-center">
+          <div className="flex items-center justify-center h-14 w-14 rounded-full bg-surface-raised border border-surface-border">
+            <HistoryIcon className="h-7 w-7 text-text-muted" />
           </div>
-          <Link
-            href="/analyze"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary dark:bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-primary-hover dark:hover:bg-blue-500 transition-colors"
-          >
+          <div className="space-y-1.5">
+            <h3 className="font-semibold text-text-primary">No History Yet</h3>
+            <p className="text-sm text-text-secondary max-w-xs mx-auto">
+              You haven&apos;t run any problem or document analyses yet.
+            </p>
+          </div>
+          <Link href="/analyze" id="history-start-cta" className="btn-primary text-sm">
             Analyze First Problem
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {history.map((item) => (
-            <div key={item.id} className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-medium rounded uppercase">
-                  {item.category}
-                </span>
-                <h3 className="font-semibold text-slate-900 dark:text-white text-base">{item.detected_issue}</h3>
+        <div className="space-y-2">
+          {/* Count */}
+          <p className="text-xs text-text-muted mb-4">{history.length} saved {history.length === 1 ? "analysis" : "analyses"}</p>
+
+          {history.map((item, idx) => (
+            <div
+              key={item.id}
+              className="group flex items-center justify-between gap-4 p-4 sm:p-5 rounded-md bg-surface border border-surface-border hover:border-surface-borderHover transition-all duration-150 animate-fade-in"
+              style={{ animationDelay: `${idx * 40}ms` }}
+            >
+              <div className="flex items-start gap-3.5 min-w-0">
+                {/* Icon */}
+                <div className="flex items-center justify-center h-9 w-9 rounded bg-surface-raised border border-surface-border shrink-0">
+                  {item.isDocument
+                    ? <FileText className="h-4 w-4 text-text-muted" />
+                    : <Search className="h-4 w-4 text-text-muted" />
+                  }
+                </div>
+
+                {/* Content */}
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="badge-neutral uppercase text-[10px] tracking-wide">
+                      {item.category}
+                    </span>
+                    <span className="text-[10px] text-text-muted">{item.timestamp}</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-text-primary truncate">
+                    {item.detected_issue}
+                  </h3>
+                </div>
               </div>
+
               <Link
                 href={`/results/${item.id}`}
-                className="flex items-center gap-1 text-sm font-medium text-primary dark:text-blue-400 hover:underline"
+                className="flex items-center gap-1.5 text-xs font-medium text-text-muted group-hover:text-brand transition-colors shrink-0"
               >
-                View Results
-                <ArrowRight className="h-4 w-4" />
+                View
+                <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           ))}
         </div>
       )}
+
     </div>
   );
 }

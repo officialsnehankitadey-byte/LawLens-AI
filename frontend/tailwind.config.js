@@ -17,33 +17,126 @@ module.exports = {
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // Base surfaces
+        base: {
+          DEFAULT: "#0C0C0C",
+          50:  "#F0EDE8",
+          100: "#D8D4CE",
+          200: "#A8A49E",
+          300: "#78746E",
+          400: "#48443E",
+          500: "#2A2826",
+          600: "#1E1C1A",
+          700: "#161412",
+          800: "#111110",
+          900: "#0C0C0C",
+          950: "#080808",
+        },
+        // Primary brand accent — warm yellow
+        brand: {
+          DEFAULT: "#F5C418",
+          light: "#FFD84D",
+          dark:  "#C99E0A",
+          muted: "#F5C41820",
+        },
+        // Surface layers
+        surface: {
+          DEFAULT: "#141414",
+          raised:  "#1A1A1A",
+          overlay: "#202020",
+          border:  "#2A2A2A",
+          borderHover: "#3A3A3A",
+        },
+        // Text hierarchy
+        text: {
+          primary:   "#F0EDE8",
+          secondary: "#A09C97",
+          muted:     "#6A6660",
+          inverse:   "#0C0C0C",
+        },
+        // Semantic states
+        success: {
+          DEFAULT: "#4ADE80",
+          muted:   "#4ADE8015",
+          border:  "#166534",
+          text:    "#86EFAC",
+        },
+        warning: {
+          DEFAULT: "#F59E0B",
+          muted:   "#F59E0B15",
+          border:  "#92400E",
+          text:    "#FCD34D",
+        },
+        danger: {
+          DEFAULT: "#F87171",
+          muted:   "#F8717115",
+          border:  "#991B1B",
+          text:    "#FCA5A5",
+        },
+        info: {
+          DEFAULT: "#60A5FA",
+          muted:   "#60A5FA15",
+          border:  "#1E3A5F",
+          text:    "#93C5FD",
+        },
+        // Legacy compatibility (keep existing Tailwind refs working)
         primary: {
-          DEFAULT: "#1e3a8a", // Deep Navy Trust Blue
-          foreground: "#ffffff",
-          hover: "#1e40af",
+          DEFAULT: "#F5C418",
+          foreground: "#0C0C0C",
+          hover: "#FFD84D",
         },
         secondary: {
-          DEFAULT: "#0f766e", // Deep Emerald
-          foreground: "#ffffff",
+          DEFAULT: "#1A1A1A",
+          foreground: "#F0EDE8",
         },
         accent: {
-          DEFAULT: "#d97706", // Civic Gold / Warm Amber
-          foreground: "#ffffff",
+          DEFAULT: "#F5C418",
+          foreground: "#0C0C0C",
         },
         muted: {
-          DEFAULT: "#f1f5f9",
-          foreground: "#64748b",
+          DEFAULT: "#1A1A1A",
+          foreground: "#6A6660",
         },
+        border: "#2A2A2A",
+        input:  "#1A1A1A",
+        ring:   "#F5C418",
+        background: "#0C0C0C",
+        foreground:  "#F0EDE8",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        mono: ["JetBrains Mono", "Fira Code", "Consolas", "monospace"],
       },
       borderRadius: {
-        lg: "0.5rem",
-        md: "calc(0.5rem - 2px)",
-        sm: "calc(0.5rem - 4px)",
+        none: "0",
+        sm:   "2px",
+        DEFAULT: "4px",
+        md:   "6px",
+        lg:   "8px",
+        xl:   "12px",
+        "2xl": "16px",
+        full: "9999px",
+      },
+      boxShadow: {
+        'glow-brand': '0 0 0 1px #F5C41840',
+        'glow-sm':    '0 1px 3px 0 rgba(0,0,0,0.4)',
+        'panel':      '0 2px 8px 0 rgba(0,0,0,0.5)',
+        'panel-lg':   '0 8px 32px 0 rgba(0,0,0,0.6)',
+      },
+      animation: {
+        'spin-slow': 'spin 2s linear infinite',
+        'fade-in':   'fadeIn 0.3s ease-out',
+        'slide-up':  'slideUp 0.3s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%':   { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%':   { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
     },
   },

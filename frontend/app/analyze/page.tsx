@@ -3,7 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { analyzeProblem } from "@/lib/api";
-import { Search, Sparkles, AlertCircle } from "lucide-react";
+import { Search, Loader2, AlertCircle, ChevronRight } from "lucide-react";
+
+const DEMO_SCENARIOS = [
+  {
+    label: "Consumer Refund Dispute",
+    text: "An online seller delivered a damaged product and refuses to refund my payment.",
+    category: "consumer",
+  },
+  {
+    label: "RTI Project Expenditure",
+    text: "I want to request official fund allocation records for a local road construction project.",
+    category: "rti",
+  },
+];
 
 export default function AnalyzePage() {
   const router = useRouter();
@@ -33,47 +46,64 @@ export default function AnalyzePage() {
     }
   };
 
-  const loadDemoScenario = (demoText: string, demoCat: string) => {
-    setProblem(demoText);
-    setCategory(demoCat);
+  const loadDemoScenario = (text: string, cat: string) => {
+    setProblem(text);
+    setCategory(cat);
     setError("");
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-3xl space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Problem Analyzer</h1>
-        <p className="text-slate-600 dark:text-slate-300 text-sm">Describe your civic or legal issue in plain language to generate a guided action plan.</p>
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
+
+      {/* Page header */}
+      <div className="mb-8 space-y-1">
+        <p className="section-label">Civic Analysis</p>
+        <h1 className="page-title text-3xl">Problem Analyzer</h1>
+        <p className="page-subtitle mt-2">
+          Describe your civic or legal issue in plain language to receive a guided action plan, applicable rights, and an editable draft.
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
+
+        {/* Error */}
         {error && (
-          <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-sm flex items-center gap-2 border border-red-200 dark:border-red-800">
+          <div className="flex items-center gap-2.5 p-3.5 rounded-md bg-danger-muted border border-danger-border text-danger-text text-sm animate-fade-in">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
-            Describe Your Situation / Problem *
+        {/* Situation field */}
+        <div className="space-y-1.5">
+          <label htmlFor="problem" className="block text-sm font-medium text-text-primary">
+            Describe Your Situation
+            <span className="text-brand ml-1">*</span>
           </label>
           <textarea
-            rows={5}
+            id="problem"
+            rows={6}
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
-            placeholder="e.g., An online seller delivered a damaged product and is refusing to refund my payment..."
-            className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-blue-500 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            placeholder="e.g., An online seller delivered a damaged product and is refusing to refund my payment despite multiple follow-ups…"
+            className="input-base resize-none font-sans leading-relaxed"
           />
+          <p className="text-xs text-text-muted">
+            Be specific — include what happened, who is involved, and when.
+          </p>
         </div>
 
+        {/* Category + Location */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200">Category</label>
+          <div className="space-y-1.5">
+            <label htmlFor="category" className="block text-sm font-medium text-text-primary">
+              Category
+            </label>
             <select
+              id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-blue-500 text-sm"
+              className="select-base"
             >
               <option value="consumer">Consumer Complaint</option>
               <option value="rti">RTI Request</option>
@@ -84,55 +114,60 @@ export default function AnalyzePage() {
             </select>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200">State / Location (Optional)</label>
+          <div className="space-y-1.5">
+            <label htmlFor="location" className="block text-sm font-medium text-text-primary">
+              State / Location
+              <span className="text-text-muted ml-1.5 font-normal text-xs">(optional)</span>
+            </label>
             <input
+              id="location"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g., Delhi, Karnataka, Maharashtra"
-              className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:focus:border-blue-500 text-sm"
+              className="input-base"
             />
           </div>
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
+          id="analyze-submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-primary text-white font-medium hover:bg-primary-hover dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors shadow-sm disabled:opacity-50 text-sm"
+          className="btn-primary w-full py-3 text-sm"
         >
           {loading ? (
             <>
-              <Sparkles className="h-4 w-4 animate-spin" />
-              Analyzing Situation & Rights...
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Analyzing situation &amp; rights…
             </>
           ) : (
             <>
               <Search className="h-4 w-4" />
               Analyze My Situation
+              <ChevronRight className="h-4 w-4 ml-auto" />
             </>
           )}
         </button>
       </form>
 
-      {/* Demo Scenarios */}
-      <div className="bg-slate-100 dark:bg-slate-800/60 p-5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Try Demo Scenarios</h3>
+      {/* Demo scenarios */}
+      <div className="mt-8 pt-7 border-t border-surface-border">
+        <p className="section-label mb-3">Try a Demo Scenario</p>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => loadDemoScenario("An online seller delivered a damaged product and refuses to refund my payment.", "consumer")}
-            className="text-xs bg-white dark:bg-slate-900 px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-primary dark:hover:border-blue-400 hover:text-primary dark:hover:text-blue-400 transition-colors"
-          >
-            🛒 Consumer Refund Dispute
-          </button>
-          <button
-            onClick={() => loadDemoScenario("I want to request official fund allocation records for a local road construction project.", "rti")}
-            className="text-xs bg-white dark:bg-slate-900 px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-primary dark:hover:border-blue-400 hover:text-primary dark:hover:text-blue-400 transition-colors"
-          >
-            📄 RTI Project Expenditure
-          </button>
+          {DEMO_SCENARIOS.map((s) => (
+            <button
+              key={s.label}
+              onClick={() => loadDemoScenario(s.text, s.category)}
+              className="text-xs px-3.5 py-2 rounded-md bg-surface-raised border border-surface-border text-text-secondary hover:text-text-primary hover:border-surface-borderHover transition-all duration-150"
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
       </div>
+
     </div>
   );
 }

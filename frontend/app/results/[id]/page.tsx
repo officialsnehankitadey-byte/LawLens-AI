@@ -3,12 +3,371 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { SituationAnalysisResponse, DocumentAnalysisResponse } from "@/lib/types";
-import { CheckCircle, AlertTriangle, FileText, ArrowRight, ShieldCheck, Clock, Calendar, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2, AlertTriangle, FileText, ArrowRight, ShieldCheck,
+  Clock, Calendar, ExternalLink, ChevronLeft, Loader2
+} from "lucide-react";
+
+// ─── Utility components ──────────────────────────────────────────────────────
+
+function SectionHeading({ icon: Icon, label, iconClass = "text-brand" }: {
+  icon: React.ElementType;
+  label: string;
+  iconClass?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 mb-5">
+      <Icon className={`h-4.5 w-4.5 ${iconClass} shrink-0`} style={{ height: "1.125rem", width: "1.125rem" }} />
+      <h2 className="text-base font-semibold text-text-primary tracking-tight">{label}</h2>
+    </div>
+  );
+}
+
+function Divider() {
+  return <div className="border-t border-surface-border" />;
+}
+
+// ─── Document Analysis View ──────────────────────────────────────────────────
+
+function DocumentView({ data }: { data: DocumentAnalysisResponse }) {
+  const router = useRouter();
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10 sm:py-14 space-y-10 animate-fade-in">
+
+      {/* Back */}
+      <button
+        onClick={() => router.back()}
+        className="btn-ghost -ml-1 text-xs"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" />
+        Back
+      </button>
+
+      {/* Header */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="badge-brand uppercase text-[10px] tracking-widest">
+            {data.document_type || "Document Analysis"}
+          </span>
+          {data.is_demo && (
+            <span className="badge-warning text-[10px]">Demo / Fallback</span>
+          )}
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight leading-tight">
+          {data.filename}
+        </h1>
+        <p className="text-sm text-text-secondary leading-relaxed max-w-2xl">{data.summary}</p>
+      </div>
+
+      <Divider />
+
+      {/* Identified Issues */}
+      {data.identified_issues && data.identified_issues.length > 0 && (
+        <div>
+          <SectionHeading icon={AlertTriangle} label="Identified Issues &amp; Key Findings" iconClass="text-warning-text" />
+          <div className="space-y-2.5">
+            {data.identified_issues.map((issue, idx) => (
+              <div key={idx} className="flex items-start gap-3 p-4 rounded-md bg-surface border border-surface-border text-sm text-text-primary">
+                <div className="status-dot bg-warning-text shrink-0" />
+                <span className="leading-relaxed">{issue}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Dates & Deadlines */}
+      {((data.explicit_deadlines?.length ?? 0) > 0 || (data.explicit_dates?.length ?? 0) > 0) && (
+        <div>
+          <SectionHeading icon={Clock} label="Important Dates &amp; Deadlines" />
+          <div className="grid sm:grid-cols-2 gap-4">
+            {data.explicit_deadlines && data.explicit_deadlines.length > 0 && (
+              <div className="p-5 rounded-md bg-warning-muted border border-warning-border space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-warning-text" />
+                  <h3 className="text-sm font-semibold text-warning-text">Explicit Deadlines</h3>
+                </div>
+                <ul className="space-y-2">
+                  {data.explicit_deadlines.map((dl, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs text-warning-text">
+                      <div className="status-dot bg-warning-text" />
+                      <span>{dl}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {data.explicit_dates && data.explicit_dates.length > 0 && (
+              <div className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-text-secondary" />
+                  <h3 className="text-sm font-semibold text-text-primary">Mentioned Dates</h3>
+                </div>
+                <ul className="space-y-2">
+                  {data.explicit_dates.map((dt, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs text-text-secondary">
+                      <div className="status-dot bg-text-muted" />
+                      <span>{dt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Extracted Facts */}
+      {data.extracted_facts && data.extracted_facts.length > 0 && (
+        <div>
+          <SectionHeading icon={FileText} label="Extracted Key Facts" iconClass="text-text-secondary" />
+          <div className="divide-y divide-surface-border rounded-md border border-surface-border bg-surface overflow-hidden">
+            {data.extracted_facts.map((fact, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+                <span className="text-text-primary leading-relaxed">{fact.fact}</span>
+                {fact.confidence && (
+                  <span className="badge-neutral shrink-0 text-[10px]">{fact.confidence}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recommended Actions */}
+      {data.recommended_actions && data.recommended_actions.length > 0 && (
+        <div>
+          <SectionHeading icon={CheckCircle2} label="Recommended Actions" iconClass="text-success-text" />
+          <div className="space-y-2.5">
+            {data.recommended_actions.map((act, idx) => (
+              <div key={idx} className="flex items-start gap-3.5 p-4 rounded-md bg-surface border border-surface-border text-sm text-text-primary">
+                <div className="flex items-center justify-center h-5 w-5 rounded-full bg-success-muted border border-success-border text-success-text font-bold text-[10px] shrink-0">
+                  {idx + 1}
+                </div>
+                <span className="leading-relaxed">{act}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Required Documents */}
+      {data.required_documents && data.required_documents.length > 0 && (
+        <div className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="h-4.5 w-4.5 text-brand" style={{ height: "1.125rem", width: "1.125rem" }} />
+            <h3 className="text-sm font-semibold text-text-primary">Documents Requested in This Notice</h3>
+          </div>
+          <p className="text-xs text-text-muted">The following documents were explicitly requested in the uploaded notice:</p>
+          <ul className="space-y-2">
+            {data.required_documents.map((doc, idx) => (
+              <li key={idx} className="flex items-center gap-2.5 text-sm text-text-secondary">
+                <CheckCircle2 className="h-3.5 w-3.5 text-brand shrink-0" />
+                <span>{doc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* CTA Banner */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 p-6 rounded-md bg-surface-raised border border-surface-border">
+        <div className="space-y-1">
+          <h3 className="font-semibold text-text-primary">Need a formal document response?</h3>
+          <p className="text-xs text-text-secondary">Generate an editable draft or appeal based on this document analysis.</p>
+        </div>
+        <button
+          onClick={() => router.push(`/draft?type=${data.recommended_draft_type || "appeal"}&summary=${encodeURIComponent(data.summary)}`)}
+          id="doc-generate-draft"
+          className="btn-primary shrink-0 text-sm"
+        >
+          <FileText className="h-4 w-4" />
+          Generate Draft
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Situation Analysis View ─────────────────────────────────────────────────
+
+function SituationView({ data }: { data: SituationAnalysisResponse }) {
+  const router = useRouter();
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10 sm:py-14 space-y-10 animate-fade-in">
+
+      {/* Back */}
+      <button
+        onClick={() => router.back()}
+        className="btn-ghost -ml-1 text-xs"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" />
+        Back
+      </button>
+
+      {/* Header */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="badge-brand uppercase text-[10px] tracking-widest">
+            {data.category} Analysis
+          </span>
+          {data.is_demo && (
+            <span className="badge-warning text-[10px]">Demo / Fallback</span>
+          )}
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight leading-tight">
+          {data.detected_issue}
+        </h1>
+        <p className="text-sm text-text-secondary leading-relaxed max-w-2xl">{data.situation_summary}</p>
+      </div>
+
+      <Divider />
+
+      {/* Applicable Rights / Schemes */}
+      <div>
+        <SectionHeading icon={ShieldCheck} label="Potentially Applicable Rights &amp; Schemes" />
+        <div className="space-y-3">
+          {data.applicable_rights_or_schemes.map((item, idx) => (
+            <div key={idx} className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-semibold text-text-primary text-sm leading-snug">{item.topic}</h3>
+                {item.source_url && (
+                  <a
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Official Source
+                  </a>
+                )}
+              </div>
+              <p className="text-sm text-text-secondary leading-relaxed">{item.explanation}</p>
+              <div className="accent-border-left">
+                <p className="text-xs text-text-muted leading-relaxed">
+                  <span className="text-text-secondary font-medium">Why relevant: </span>
+                  {item.relevance_reason}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Verified Sources */}
+      {data.sources && data.sources.length > 0 && (
+        <div>
+          <SectionHeading icon={ExternalLink} label="Verified Legal Citations &amp; Sources" iconClass="text-info-text" />
+          <div className="divide-y divide-surface-border rounded-md border border-surface-border bg-surface overflow-hidden">
+            {data.sources.map((src, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-4 px-4 py-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-text-primary truncate">
+                    {src.source_name} — {src.title}
+                  </p>
+                  <p className="text-xs text-text-muted font-mono mt-0.5 truncate">{src.url}</p>
+                </div>
+                {src.url && (
+                  <a
+                    href={src.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Visit
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Action Plan */}
+      <div>
+        <SectionHeading icon={CheckCircle2} label="Step-by-Step Action Plan" iconClass="text-success-text" />
+
+        {/* Immediate action */}
+        <div className="mb-4 p-4 rounded-md bg-success-muted border border-success-border">
+          <p className="text-sm text-success-text">
+            <span className="font-semibold">Immediate Action: </span>
+            {data.action_plan.immediate_action}
+          </p>
+        </div>
+
+        {/* Ordered steps */}
+        <div className="space-y-3">
+          {data.action_plan.ordered_steps.map((step) => (
+            <div key={step.step_number} className="flex items-start gap-4 p-5 rounded-md bg-surface border border-surface-border">
+              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-brand/10 border border-brand/20 text-brand font-bold text-xs shrink-0">
+                {step.step_number}
+              </div>
+              <div className="space-y-1.5 min-w-0">
+                <h3 className="font-semibold text-text-primary text-sm">{step.title}</h3>
+                <p className="text-sm text-text-secondary leading-relaxed">{step.description}</p>
+                <p className="text-xs text-text-muted">
+                  <span className="font-medium text-text-secondary">Why it matters: </span>
+                  {step.why_it_matters}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Required Documents */}
+      <div className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
+        <div className="flex items-center gap-2.5">
+          <ShieldCheck className="h-4 w-4 text-brand" />
+          <h3 className="text-sm font-semibold text-text-primary">Required Documents Checklist</h3>
+        </div>
+        <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+          {data.action_plan.required_documents.map((doc, idx) => (
+            <li key={idx} className="flex items-center gap-2.5 text-sm text-text-secondary">
+              <CheckCircle2 className="h-3.5 w-3.5 text-brand shrink-0" />
+              <span>{doc}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* CTA Banner */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 p-6 rounded-md bg-surface-raised border border-surface-border">
+        <div className="space-y-1">
+          <h3 className="font-semibold text-text-primary">Ready to take action?</h3>
+          <p className="text-xs text-text-secondary">Generate an editable draft application or complaint customized for your situation.</p>
+        </div>
+        <button
+          onClick={() => router.push(`/draft?type=${data.recommended_draft_type || "consumer_complaint"}&summary=${encodeURIComponent(data.situation_summary)}`)}
+          id="situation-generate-draft"
+          className="btn-primary shrink-0 text-sm"
+        >
+          <FileText className="h-4 w-4" />
+          Generate Draft
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Disclaimer */}
+      {data.disclaimer && (
+        <p className="text-xs text-text-muted text-center italic px-6">{data.disclaimer}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function ResultsPage() {
   const params = useParams();
   const router = useRouter();
   const [data, setData] = useState<SituationAnalysisResponse | DocumentAnalysisResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (params?.id) {
@@ -35,17 +394,35 @@ export default function ResultsPage() {
           console.error("Failed to parse stored analysis");
         }
       }
+      setLoading(false);
     }
   }, [params?.id]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 text-brand animate-spin mx-auto" />
+          <p className="text-sm text-text-secondary">Loading analysis…</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center space-y-4">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Analysis Not Found</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">The requested analysis result could not be found locally.</p>
+      <div className="mx-auto max-w-lg px-4 py-24 text-center space-y-5">
+        <div className="flex items-center justify-center h-12 w-12 rounded-full bg-surface border border-surface-border mx-auto">
+          <FileText className="h-6 w-6 text-text-muted" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-text-primary">Analysis Not Found</h2>
+          <p className="text-sm text-text-secondary">The requested analysis result could not be found in local storage.</p>
+        </div>
         <button
           onClick={() => router.push("/analyze")}
-          className="px-4 py-2 bg-primary text-white dark:bg-blue-600 rounded-lg text-sm font-medium"
+          id="not-found-cta"
+          className="btn-primary mx-auto"
         >
           Start New Analysis
         </button>
@@ -60,305 +437,8 @@ export default function ResultsPage() {
   };
 
   if (isDocumentAnalysis(data)) {
-    return (
-      <div className="container mx-auto px-4 py-10 max-w-4xl space-y-8">
-        {/* Header Banner */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full uppercase tracking-wider">
-              {data.document_type || "Document Analysis"}
-            </span>
-            {data.is_demo && (
-              <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full border border-amber-200 dark:border-amber-800">
-                Demo / Fallback Mode
-              </span>
-            )}
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{data.filename}</h1>
-          <p className="text-slate-600 dark:text-slate-300 text-sm">{data.summary}</p>
-        </div>
-
-        {/* Identified Issues */}
-        {data.identified_issues && data.identified_issues.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              Identified Issues & Key Findings
-            </h2>
-            <div className="grid gap-3">
-              {data.identified_issues.map((issue, idx) => (
-                <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-sm text-slate-800 dark:text-slate-200 flex items-start gap-3">
-                  <div className="h-2 w-2 rounded-full bg-amber-500 mt-2 shrink-0" />
-                  <span>{issue}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Dates and Deadlines */}
-        {((data.explicit_deadlines && data.explicit_deadlines.length > 0) || (data.explicit_dates && data.explicit_dates.length > 0)) && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary dark:text-blue-400" />
-              Important Dates & Deadlines
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {data.explicit_deadlines && data.explicit_deadlines.length > 0 && (
-                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-5 rounded-xl space-y-2">
-                  <h3 className="font-semibold text-amber-900 dark:text-amber-200 text-sm flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-                    Explicit Deadlines
-                  </h3>
-                  <ul className="space-y-1.5 text-xs text-amber-950 dark:text-amber-100 font-medium">
-                    {data.explicit_deadlines.map((dl, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
-                        <span>{dl}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {data.explicit_dates && data.explicit_dates.length > 0 && (
-                <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-xl space-y-2">
-                  <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                    Mentioned Dates
-                  </h3>
-                  <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
-                    {data.explicit_dates.map((dt, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                        <span>{dt}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Extracted Facts */}
-        {data.extracted_facts && data.extracted_facts.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <FileText className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-              Extracted Key Facts
-            </h2>
-            <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-              {data.extracted_facts.map((fact, idx) => (
-                <div key={idx} className="flex items-start justify-between text-sm border-b border-slate-100 dark:border-slate-700 last:border-0 pb-2.5 last:pb-0">
-                  <span className="text-slate-800 dark:text-slate-200">{fact.fact}</span>
-                  {fact.confidence && (
-                    <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded shrink-0 ml-3">
-                      {fact.confidence} confidence
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Recommended Actions */}
-        {data.recommended_actions && data.recommended_actions.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              Recommended Actions
-            </h2>
-            <div className="space-y-3">
-              {data.recommended_actions.map((act, idx) => (
-                <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 text-sm text-slate-800 dark:text-slate-200">
-                  <div className="h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0">
-                    {idx + 1}
-                  </div>
-                  <span>{act}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Required Documents Checklist */}
-        {data.required_documents && data.required_documents.length > 0 && (
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary dark:text-blue-400" />
-              Documents Requested in This Notice
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">The following documents were explicitly requested in the uploaded document:</p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              {data.required_documents.map((doc, idx) => (
-                <li key={idx} className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>{doc}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="bg-blue-900 dark:bg-blue-950 text-white p-6 rounded-xl space-y-4 flex flex-col sm:flex-row items-center justify-between">
-          <div>
-            <h3 className="font-bold text-lg">Need a formal document response?</h3>
-            <p className="text-xs text-blue-200">Generate an editable draft representation or appeal based on this document.</p>
-          </div>
-          <button
-            onClick={() => router.push(`/draft?type=${data.recommended_draft_type || "appeal"}&summary=${encodeURIComponent(data.summary)}`)}
-            className="px-5 py-2.5 bg-accent hover:bg-amber-600 text-white font-medium rounded-lg text-sm transition-colors shrink-0 flex items-center gap-2 shadow-sm"
-          >
-            <FileText className="h-4 w-4" />
-            Generate Editable Draft
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    );
+    return <DocumentView data={data} />;
   }
 
-  return (
-    <div className="container mx-auto px-4 py-10 max-w-4xl space-y-8">
-      {/* Header Banner */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full uppercase tracking-wider">
-            {data.category} Analysis
-          </span>
-          {data.is_demo && (
-            <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full border border-amber-200 dark:border-amber-800">
-              Demo / Fallback Mode
-            </span>
-          )}
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{data.detected_issue}</h1>
-        <p className="text-slate-600 dark:text-slate-300 text-sm">{data.situation_summary}</p>
-      </div>
-
-      {/* Applicable Rights / Schemes */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary dark:text-blue-400" />
-          Potentially Applicable Rights & Schemes
-        </h2>
-        
-        <div className="grid gap-4">
-          {data.applicable_rights_or_schemes.map((item, idx) => (
-            <div key={idx} className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-base">{item.topic}</h3>
-                {item.source_url && (
-                  <a
-                    href={item.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800 transition-colors shrink-0"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Verified Official Source
-                  </a>
-                )}
-              </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300">{item.explanation}</p>
-              <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700">
-                <strong>Why relevant:</strong> {item.relevance_reason}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Verified Official Sources & Legal Citations */}
-      {data.sources && data.sources.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <ExternalLink className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            Verified Official Legal Citations & Sources
-          </h2>
-          <div className="grid gap-3">
-            {data.sources.map((src, idx) => (
-              <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between gap-4 text-sm">
-                <div>
-                  <h4 className="font-semibold text-slate-900 dark:text-white">{src.source_name} — {src.title}</h4>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{src.url}</span>
-                </div>
-                {src.url && (
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-xs font-semibold rounded-lg border border-blue-200 dark:border-blue-800 flex items-center gap-1 shrink-0"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Visit Official Portal
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Action Plan */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          Step-by-Step Action Plan
-        </h2>
-
-        <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-4 rounded-xl text-emerald-900 dark:text-emerald-200 text-sm font-medium">
-          <strong>Immediate Action:</strong> {data.action_plan.immediate_action}
-        </div>
-
-        <div className="space-y-3">
-          {data.action_plan.ordered_steps.map((step) => (
-            <div key={step.step_number} className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-start gap-4">
-              <div className="h-7 w-7 rounded-full bg-primary dark:bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                {step.step_number}
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-slate-900 dark:text-white text-sm">{step.title}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300">{step.description}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400"><strong>Why it matters:</strong> {step.why_it_matters}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Required Documents Checklist */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-        <h3 className="font-bold text-slate-900 dark:text-white text-base">Required Documents Checklist</h3>
-        <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-          {data.action_plan.required_documents.map((doc, idx) => (
-            <li key={idx} className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>{doc}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* CTA to Generate Draft */}
-      <div className="bg-blue-900 dark:bg-blue-950 text-white p-6 rounded-xl space-y-4 flex flex-col sm:flex-row items-center justify-between">
-        <div>
-          <h3 className="font-bold text-lg">Ready to take action?</h3>
-          <p className="text-xs text-blue-200">Generate an editable draft application or complaint customized for your situation.</p>
-        </div>
-        <button
-          onClick={() => router.push(`/draft?type=${data.recommended_draft_type || "consumer_complaint"}&summary=${encodeURIComponent(data.situation_summary)}`)}
-          className="px-5 py-2.5 bg-accent hover:bg-amber-600 text-white font-medium rounded-lg text-sm transition-colors shrink-0 flex items-center gap-2 shadow-sm"
-        >
-          <FileText className="h-4 w-4" />
-          Generate Editable Draft
-          <ArrowRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Disclaimer */}
-      <p className="text-xs text-slate-500 dark:text-slate-400 text-center italic">{data.disclaimer}</p>
-    </div>
-  );
+  return <SituationView data={data} />;
 }
