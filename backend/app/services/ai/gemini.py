@@ -8,7 +8,8 @@ from app.models.schemas import (
     ProblemRequest, SituationAnalysisResponse, RightOrSchemeItem,
     ActionPlan, ActionStep, SourceReference,
     DocumentAnalysisResponse, ExtractedFact,
-    DraftRequest, DraftResponse
+    DraftRequest, DraftResponse,
+    SchemeCheckRequest, SchemeCheckResponse, CriterionAssessment
 )
 
 logger = logging.getLogger(__name__)
@@ -18,12 +19,15 @@ class GeminiProvider(AIProvider):
     """
     Google Gemini API Provider using the google-genai SDK (v2+).
     Falls back to FallbackProvider on init failure or runtime errors.
+    An optional `secondary` provider (e.g. GroqProvider) is tried before
+    falling back to deterministic demo mode.
     """
 
     def __init__(self, api_key: str, model_name: str = "gemini-3.6-flash"):
         self.api_key = api_key
         self.model_name = model_name
         self.fallback = FallbackProvider()
+        self.secondary = None
         self.client = None
 
         if api_key:
@@ -33,6 +37,44 @@ class GeminiProvider(AIProvider):
                 logger.info(f"Gemini client initialized with model: {model_name}")
             except Exception as e:
                 logger.warning(f"Failed to initialize Gemini client: {e}. Using FallbackProvider.")
+
+    def is_available(self) -> bool:
+        return self.client is not None
+
+    def _complete(self, prompt: str) -> str:
+        """Low-level single-shot text generation. Overridden by subclasses (e.g. GroqProvider)."""
+        from google.genai import types
+
+        # Disable/limit "thinking" for much lower latency; parameter differs by model generation.
+        if self.model_name.lower().startswith("gemini-3"):
+            thinking_config = types.ThinkingConfig(thinking_level="low")
+        else:
+            thinking_config = types.ThinkingConfig(thinking_budget=0)
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(thinking_config=thinking_config),
+            )
+        except Exception as e:
+            if "thinking" in str(e).lower():
+                # Model rejected the thinking config; retry without it.
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                )
+            else:
+                raise
+        return response.text.strip()
+
+    async def _fallback_or_secondary(self, method_name: str, *args):
+        """Try the secondary provider chain, then the deterministic fallback provider."""
+        if self.secondary is not None:
+            try:
+                return await getattr(self.secondary, method_name)(*args)
+            except Exception as e:
+                logger.error(f"Secondary provider {type(self.secondary).__name__} failed: {e}")
+        return await getattr(self.fallback, method_name)(*args)
     @staticmethod
     def _resolve_official_url(topic_str: str) -> str:
         t = str(topic_str).lower()
@@ -52,8 +94,8 @@ class GeminiProvider(AIProvider):
     #  PROBLEM ANALYSIS
     # ------------------------------------------------------------------ #
     async def analyze_problem(self, request: ProblemRequest) -> SituationAnalysisResponse:
-        if not self.client:
-            return await self.fallback.analyze_problem(request)
+        if not self.is_available():
+            return await self._fallback_or_secondary("analyze_problem", request)
 
         prompt = f"""You are LawLens AI — a civic and legal empowerment assistant for Indian citizens.
 Analyze the following problem and return a JSON object ONLY (no markdown, no explanation).
@@ -111,12 +153,7 @@ Legal Accuracy Rules (MUST follow):
 Respond ONLY with valid JSON. No markdown code fences.
 """
         try:
-            from google import genai
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-            )
-            raw = response.text.strip()
+            raw = self._complete(prompt)
             # Strip markdown fences if model includes them
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
@@ -191,14 +228,14 @@ Respond ONLY with valid JSON. No markdown code fences.
 
         except Exception as e:
             logger.error(f"Gemini analyze_problem error: {e}")
-            return await self.fallback.analyze_problem(request)
+            return await self._fallback_or_secondary("analyze_problem", request)
 
     # ------------------------------------------------------------------ #
     #  DOCUMENT ANALYSIS
     # ------------------------------------------------------------------ #
     async def analyze_document(self, filename: str, content: str) -> DocumentAnalysisResponse:
-        if not self.client:
-            return await self.fallback.analyze_document(filename, content)
+        if not self.is_available():
+            return await self._fallback_or_secondary("analyze_document", filename, content)
 
         # First run the deterministic extractor for reliable field extraction
         base = DocumentAnalyzer.analyze(filename, content)
@@ -235,11 +272,7 @@ Rules:
 - Respond ONLY with valid JSON. No markdown code fences.
 """
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-            )
-            raw = response.text.strip()
+            raw = self._complete(prompt)
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
                 if raw.startswith("json"):
@@ -263,14 +296,14 @@ Rules:
 
         except Exception as e:
             logger.error(f"Gemini analyze_document error: {e}")
-            return base  # Return deterministic result on failure
+            return await self._fallback_or_secondary("analyze_document", filename, content)
 
     # ------------------------------------------------------------------ #
     #  DRAFT GENERATION
     # ------------------------------------------------------------------ #
     async def generate_draft(self, request: DraftRequest) -> DraftResponse:
-        if not self.client:
-            return await self.fallback.generate_draft(request)
+        if not self.is_available():
+            return await self._fallback_or_secondary("generate_draft", request)
 
         type_descriptions = {
             "rti": "Right to Information (RTI) application under the RTI Act 2005",
@@ -285,6 +318,22 @@ Rules:
         if request.specific_demands:
             demands_str = "Specific demands to include:\n" + "\n".join(f"- {d}" for d in request.specific_demands)
 
+        details_str = ""
+        if request.user_details:
+            details_str = (
+                "VERIFIED APPLICANT DETAILS (use these directly in the letter — do NOT put "
+                "placeholders for these fields):\n"
+                + "\n".join(f"- {k.replace('_', ' ').title()}: {v}" for k, v in request.user_details.items())
+                + "\n"
+            )
+
+        placeholder_rule = (
+            "Only use [PLACEHOLDER] for fields the user has NOT provided. Every fact present in "
+            "the verified details above must be written directly into the letter."
+            if request.user_details
+            else "Use [PLACEHOLDER] for any field the user needs to fill in (name, address, date, etc.)."
+        )
+
         prompt = f"""You are LawLens AI — a legal drafting assistant for Indian citizens.
 Draft a professional {doc_type_desc} letter based on the following case summary.
 
@@ -293,22 +342,18 @@ Case Summary:
 
 {authorities_str}
 {demands_str}
-
+{details_str}
 Requirements:
 - Write a complete, formal letter in English suitable for submission to Indian government/legal authorities.
 - Use formal salutation and closing.
-- Use [PLACEHOLDER] for any field the user needs to fill in (name, address, date, etc.).
+- {placeholder_rule}
 - Include clear subject line, body with facts, specific request/demand, and closing.
-- Remove any statement that replacement was requested, refused, delayed, or not provided unless explicitly supported by the case summary or specific demands. Use only verified facts.
+- Remove any statement that replacement was requested, refused, delayed, or not provided unless explicitly supported by the case summary, verified details, or specific demands. Use only verified facts.
 - The letter should be professionally formatted and legally appropriate.
 - Do NOT include any preamble or explanation — output ONLY the letter text.
 """
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-            )
-            draft_content = response.text.strip()
+            draft_content = self._complete(prompt)
 
             title_map = {
                 "rti": "Application under Right to Information Act, 2005",
@@ -335,4 +380,92 @@ Requirements:
 
         except Exception as e:
             logger.error(f"Gemini generate_draft error: {e}")
-            return await self.fallback.generate_draft(request)
+            return await self._fallback_or_secondary("generate_draft", request)
+
+    # ------------------------------------------------------------------ #
+    #  SCHEME ELIGIBILITY CHECK
+    # ------------------------------------------------------------------ #
+    async def check_scheme_eligibility(self, request: SchemeCheckRequest) -> SchemeCheckResponse:
+        if not self.is_available():
+            return await self._fallback_or_secondary("check_scheme_eligibility", request)
+
+        criteria_str = "\n".join(f"- {k}: {v}" for k, v in (request.user_criteria or {}).items()) or "- (no details provided)"
+        lang_note = f"Write the plain_language_summary and questions in language code '{request.language}'." if request.language and request.language != "en" else ""
+
+        prompt = f"""You are LawLens AI — a government scheme eligibility analyst for Indian citizens.
+Evaluate whether the user is likely eligible for the scheme below. Return a JSON object ONLY.
+
+Scheme: {request.scheme_name}
+User Location: {request.location or "India"}
+User-provided details:
+{criteria_str}
+
+Return this exact JSON structure:
+{{
+  "verdict": "one of: eligible, likely_eligible, likely_ineligible, needs_info",
+  "plain_language_summary": "2-3 sentences in simple words explaining whether they qualify and why",
+  "criteria_assessment": [
+    {{
+      "criterion": "e.g. Age limit",
+      "requirement": "e.g. Between 18 and 40 years",
+      "your_status": "What the user told us, or 'Not provided'",
+      "met": "yes | no | unknown"
+    }}
+  ],
+  "known_criteria": ["All official eligibility conditions of the scheme"],
+  "missing_information": ["Facts needed from the user to be sure"],
+  "required_documents": ["Documents typically required to apply"],
+  "follow_up_questions": ["1-3 short questions whose answers would firm up the verdict"],
+  "next_action": "Concrete next step for the user",
+  "source_url": "Official government URL for this scheme (myscheme.gov.in or the ministry portal). Never invent URLs — use https://myscheme.gov.in if unsure."
+}}
+
+Rules:
+- Base eligibility rules on your knowledge of Indian central/state schemes; if you are not certain the scheme exists, still analyse the closest well-known matching scheme and say so in plain_language_summary.
+- Mark met as "unknown" rather than guessing when the user did not provide the fact.
+- Do NOT fabricate specific income limits or dates; phrase them as approximations with "approximately" when unsure.
+- {lang_note}
+- Respond ONLY with valid JSON. No markdown code fences.
+"""
+        try:
+            raw = self._complete(prompt)
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            data = json.loads(raw.strip())
+
+            criteria = [
+                CriterionAssessment(
+                    criterion=c.get("criterion", ""),
+                    requirement=c.get("requirement", ""),
+                    your_status=c.get("your_status", "Not provided"),
+                    met=c.get("met", "unknown"),
+                )
+                for c in data.get("criteria_assessment", [])
+            ]
+            verdict = data.get("verdict", "needs_info")
+            readable = {
+                "eligible": "Eligible — you meet the known criteria.",
+                "likely_eligible": "Likely Eligible — subject to document verification.",
+                "likely_ineligible": "Likely Not Eligible based on the details provided.",
+                "needs_info": "Cannot determine yet — more information needed.",
+            }.get(verdict, verdict)
+
+            return SchemeCheckResponse(
+                scheme_name=request.scheme_name,
+                verdict=verdict,
+                plain_language_summary=data.get("plain_language_summary"),
+                known_criteria=data.get("known_criteria", []),
+                criterion_assessment=criteria,
+                missing_information=data.get("missing_information", []),
+                eligible_assessment=readable,
+                required_documents=data.get("required_documents", []),
+                next_action=data.get("next_action", "Check the official portal and gather required documents."),
+                follow_up_questions=data.get("follow_up_questions", []),
+                source_url=data.get("source_url") or "https://myscheme.gov.in",
+                is_demo=False,
+            )
+        except Exception as e:
+            logger.error(f"Gemini check_scheme_eligibility error: {e}")
+            return await self._fallback_or_secondary("check_scheme_eligibility", request)

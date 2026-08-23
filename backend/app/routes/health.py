@@ -6,8 +6,18 @@ router = APIRouter()
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
-    has_key = bool(settings.GEMINI_API_KEY)
-    ai_provider = "Google Gemini API" if has_key else "Fallback Demo Provider"
+    if settings.GEMINI_API_KEY and settings.GROQ_API_KEY:
+        ai_provider = f"Google Gemini API ({settings.GEMINI_MODEL}) + Groq failover ({settings.GROQ_MODEL})"
+        has_key = True
+    elif settings.GEMINI_API_KEY:
+        ai_provider = f"Google Gemini API ({settings.GEMINI_MODEL})"
+        has_key = True
+    elif settings.GROQ_API_KEY:
+        ai_provider = f"Groq API ({settings.GROQ_MODEL})"
+        has_key = True
+    else:
+        ai_provider = "Fallback Demo Provider"
+        has_key = False
     return HealthResponse(
         status="healthy",
         version=settings.VERSION,

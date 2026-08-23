@@ -120,8 +120,11 @@ def test_real_document_facts_are_preserved_not_replaced_with_demo_data():
     # is_demo must be False — this is a real document
     assert data["is_demo"] is False, "is_demo should be False for a real uploaded document"
 
-    # The summary must reference the actual file, not a generic demo description
-    assert "headphone_complaint.txt" in data["summary"]
+    # The summary must reference the actual document content, not a generic demo description
+    summary_lower = data["summary"].lower()
+    assert "headphones" in summary_lower or "charging" in summary_lower, (
+        "Summary must reflect the actual uploaded document (wireless headphones / charging defect)"
+    )
 
     # Facts extracted must reflect actual document content
     facts_str = " ".join(f["fact"] for f in data["extracted_facts"]).lower()

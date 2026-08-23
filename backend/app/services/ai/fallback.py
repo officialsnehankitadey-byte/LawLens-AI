@@ -5,7 +5,8 @@ from app.services.ai.base import AIProvider
 from app.models.schemas import (
     ProblemRequest, SituationAnalysisResponse, RightOrSchemeItem,
     ActionPlan, ActionStep, SourceReference, DocumentAnalysisResponse, ExtractedFact,
-    DraftRequest, DraftResponse
+    DraftRequest, DraftResponse,
+    SchemeCheckRequest, SchemeCheckResponse
 )
 
 from app.services.document.analyzer import DocumentAnalyzer
@@ -94,4 +95,31 @@ Date: [Current Date]
             placeholders_used=["[The Public Information Officer / Concerned Authority]", "[Department / Office Name]", "[Your Full Name]", "[Your Contact Address]"],
             editable=True,
             disclaimer="Demo Draft: Please fill in all bracketed placeholders before submitting."
+        )
+
+    async def check_scheme_eligibility(self, request: SchemeCheckRequest) -> SchemeCheckResponse:
+        provided = [f"{k.replace('_', ' ')}: {v}" for k, v in (request.user_criteria or {}).items()]
+        missing = ["Age proof", "Income certificate", "State/domicile certificate", "Bank account details"]
+        follow_ups = [
+            "What is your annual family income?",
+            f"Which state do you currently reside in?{'' if request.location else ' (needed for state-specific rules)'}",
+            "Do you belong to any special category (SC/ST/OBC/women/farmer/student/senior citizen)?",
+        ]
+        return SchemeCheckResponse(
+            scheme_name=request.scheme_name,
+            verdict="needs_info",
+            plain_language_summary=(
+                f"Offline mode: LawLens cannot verify '{request.scheme_name}' eligibility without live AI access. "
+                + (f"You told us: {', '.join(provided)}. " if provided else "No details were provided yet. ")
+                + "Provide the missing facts below and retry once AI services are reachable."
+            ),
+            known_criteria=["Age criteria", "Income ceiling", "Residency / domicile", "Category-specific conditions"],
+            criterion_assessment=[],
+            missing_information=missing,
+            eligible_assessment="Cannot determine yet — more information needed.",
+            required_documents=["Aadhaar Card", "Income Certificate", "Address Proof", "Bank Passbook"],
+            next_action="Gather the listed documents and check https://myscheme.gov.in for official criteria.",
+            follow_up_questions=follow_ups,
+            source_url="https://myscheme.gov.in",
+            is_demo=True,
         )

@@ -52,6 +52,15 @@ class EvidenceItem(BaseModel):
     item: str
     status: str  # e.g., "Available", "Not provided", "Not established"
 
+# --- Authority Routing (Department Router) ---
+class AuthorityRouting(BaseModel):
+    authority_name: str
+    department: str
+    jurisdiction: Optional[str] = None
+    submission_method: Optional[str] = None
+    portal_url: Optional[str] = None
+    notes: Optional[str] = None
+
 # Updated SituationAnalysisResponse with evidence status
 class SituationAnalysisResponse(BaseModel):
     id: str
@@ -66,6 +75,7 @@ class SituationAnalysisResponse(BaseModel):
     disclaimer: str
     is_demo: bool = False
     evidence_status: List[EvidenceItem] = []
+    authority_routing: Optional[AuthorityRouting] = None
 
 
 # --- Document Analysis ---
@@ -86,20 +96,61 @@ class DocumentAnalysisResponse(BaseModel):
     recommended_actions: List[str] = []
     recommended_draft_type: Optional[str] = None
     is_demo: bool = False
+    authority_routing: Optional[AuthorityRouting] = None
 
 # --- Scheme Check ---
 class SchemeCheckRequest(BaseModel):
     scheme_name: str
-    user_criteria: dict
+    user_criteria: dict = Field(default_factory=dict, description="User-provided facts e.g. age, income, state, occupation")
+    location: Optional[str] = Field(None, description="User State/District for state-specific rules")
+    language: str = Field("en", description="Preferred language code")
+
+class CriterionAssessment(BaseModel):
+    criterion: str
+    requirement: str
+    your_status: str = Field("Not provided", description="What the user told us")
+    met: str = Field("unknown", description="yes, no, or unknown")
 
 class SchemeCheckResponse(BaseModel):
     scheme_name: str
+    verdict: str = Field("needs_info", description="eligible, likely_eligible, likely_ineligible, needs_info")
+    plain_language_summary: Optional[str] = None
     known_criteria: List[str]
+    criterion_assessment: List[CriterionAssessment] = []
     missing_information: List[str]
-    eligible_assessment: str
+    eligible_assessment: str = Field(description="Human-readable verdict sentence (back-compat)")
     required_documents: List[str]
     next_action: str
+    follow_up_questions: List[str] = []
     source_url: Optional[str] = None
+    is_demo: bool = False
+
+# --- Conversational Form-Filler (Interview) ---
+class InterviewQuestion(BaseModel):
+    field_key: str
+    question: str
+    answer_type: str = Field("text", description="text, textarea, select, date, number, email, tel")
+    options: List[str] = []
+    required: bool = False
+    help_text: Optional[str] = None
+
+class InterviewStartRequest(BaseModel):
+    draft_type: str = Field(..., description="rti, consumer_complaint, grievance, appeal")
+    case_summary: str = Field(..., description="Plain-language description of the issue")
+
+class InterviewStartResponse(BaseModel):
+    interview_id: str
+    draft_type: str
+    title: str
+    questions: List[InterviewQuestion]
+
+class InterviewSubmitRequest(BaseModel):
+    interview_id: Optional[str] = None
+    draft_type: str
+    case_summary: str
+    answers: dict = Field(default_factory=dict, description="field_key -> user answer")
+    target_authority: Optional[str] = None
+    specific_demands: Optional[List[str]] = None
 
 # --- Draft Generation ---
 class DraftRequest(BaseModel):
