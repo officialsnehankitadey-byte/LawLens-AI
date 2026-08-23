@@ -1,5 +1,18 @@
+<<<<<<< HEAD
 import axios, { AxiosError } from "axios";
 import { HealthStatus, ProblemRequest, SituationAnalysisResponse, DocumentAnalysisResponse, DraftRequest, DraftResponse } from "./types";
+=======
+import axios from "axios";
+import {
+  HealthStatus,
+  ProblemRequest,
+  SituationAnalysisResponse,
+  DocumentAnalysisResponse,
+  DraftRequest,
+  DraftResponse,
+  LawyerSearchResponse
+} from "./types";
+>>>>>>> 57e6df32de2413c62cf3a6f6a6b0e12d3c9da57a
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -8,7 +21,11 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+<<<<<<< HEAD
   timeout: 60000, // 60s — AI calls can take time
+=======
+  timeout: 120000,
+>>>>>>> 57e6df32de2413c62cf3a6f6a6b0e12d3c9da57a
 });
 
 /**
@@ -42,6 +59,15 @@ export const checkHealth = async (): Promise<HealthStatus> => {
 
 export const analyzeProblem = async (data: ProblemRequest): Promise<SituationAnalysisResponse> => {
   const res = await api.post<SituationAnalysisResponse>("/analyze/problem", data);
+  return res.data;
+};
+
+export const getSuggestedLawyers = async (category: string, location?: string): Promise<LawyerSearchResponse> => {
+  const params: Record<string, string> = { category };
+  if (location && location.trim()) {
+    params.location = location.trim();
+  }
+  const res = await api.get<LawyerSearchResponse>("/lawyers/suggest", { params });
   return res.data;
 };
 

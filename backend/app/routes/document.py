@@ -1,16 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.config import settings
 from app.models.schemas import DocumentAnalysisResponse
 from app.services.document.processor import DocumentProcessor
-from app.services.ai.gemini import GeminiProvider
-from app.services.ai.fallback import FallbackProvider
+from app.services.ai import build_ai_provider
 
 router = APIRouter()
-
-def get_ai_provider():
-    if settings.GEMINI_API_KEY:
-        return GeminiProvider(api_key=settings.GEMINI_API_KEY, model_name=settings.GEMINI_MODEL)
-    return FallbackProvider()
 
 @router.post("/analyze/document", response_model=DocumentAnalysisResponse)
 async def analyze_document(file: UploadFile = File(...)):
@@ -25,5 +18,5 @@ async def analyze_document(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
 
-    provider = get_ai_provider()
+    provider = build_ai_provider()
     return await provider.analyze_document(file.filename, extracted_text)

@@ -6,9 +6,34 @@ export interface HealthStatus {
   api_key_configured: boolean;
 }
 
+export interface SuggestedLawyer {
+  id: string;
+  name: string;
+  title: string;
+  specialization: string;
+  location: string;
+  court_practice: string;
+  experience_years: number;
+  bar_council_reg?: string;
+  rating: number;
+  reviews_count: number;
+  contact_phone?: string;
+  contact_email?: string;
+  chambers_address: string;
+  consultation_url?: string;
+  verified_practitioner: boolean;
+  notable_work_or_bio?: string;
+}
+
+export interface LawyerSearchResponse {
+  category: string;
+  location_searched?: string;
+  lawyers: SuggestedLawyer[];
+}
+
 export interface ProblemRequest {
   problem: string;
-  category: string;
+  category?: string;
   location?: string;
   language?: string;
 }
@@ -54,6 +79,10 @@ export interface SituationAnalysisResponse {
   situation_summary: string;
   detected_issue: string;
   category: string;
+  predicted_category?: string;
+  predicted_category_name?: string;
+  category_confidence?: string;
+  category_reasoning?: string;
   applicable_rights_or_schemes: RightOrSchemeItem[];
   eligibility_assessment?: string;
   action_plan: ActionPlan;
@@ -61,6 +90,7 @@ export interface SituationAnalysisResponse {
   sources: SourceReference[];
   disclaimer: string;
   is_demo: boolean;
+  suggested_lawyers?: SuggestedLawyer[];
 }
 
 export interface ExtractedFact {
@@ -91,6 +121,7 @@ export interface DocumentAnalysisResponse {
   is_demo: boolean;
   provider?: string;
   mode?: string;
+  suggested_lawyers?: SuggestedLawyer[];
 }
 
 export interface DraftRequest {
