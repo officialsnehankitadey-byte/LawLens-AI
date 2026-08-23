@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, ShieldAlert, BookOpen, History, Info, Compass, X } from "lucide-react";
+import { FileText, ShieldAlert, BookOpen, History, Info } from "lucide-react";
 
 interface SidebarProps {
   open: boolean;
@@ -33,25 +33,10 @@ export default function Sidebar({
     <aside
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`fixed top-0 left-0 z-40 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl transform transition-transform duration-300 flex flex-col ${
+      className={`fixed top-0 left-0 z-40 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl transform transition-transform duration-300 flex flex-col pt-16 ${
         open ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      {/* Sidebar Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200 dark:border-slate-800">
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary dark:text-blue-400">
-          <Compass className="h-6 w-6 text-accent" />
-          <span>LawLens <span className="text-accent">AI</span></span>
-        </Link>
-        <button
-          onClick={toggleSidebar}
-          aria-label="Close Navigation Panel"
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
       {/* Navigation Options List */}
       <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto font-medium text-sm">
         {navItems.map((item) => {
@@ -76,12 +61,12 @@ export default function Sidebar({
 
       {/* Sidebar Footer Status */}
       <div className="p-4 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
-        <span>{isPinned ? "📌 Statically Open" : "👁️ Hover Preview"}</span>
+        <span>{isPinned ? "📌 Statically Pinned" : "👁️ Hover Preview"}</span>
         <button
           onClick={toggleSidebar}
           className="text-xs font-semibold text-primary dark:text-blue-400 hover:underline"
         >
-          {isPinned ? "Unpin" : "Pin Open"}
+          {isPinned ? "Unlock" : "Pin Open"}
         </button>
       </div>
     </aside>
