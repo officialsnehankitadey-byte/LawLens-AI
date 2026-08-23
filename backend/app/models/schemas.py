@@ -72,20 +72,30 @@ class SituationAnalysisResponse(BaseModel):
 class ExtractedFact(BaseModel):
     fact: str
     confidence: Optional[str] = "high"
+    category: Optional[str] = "document_fact"
 
 class DocumentAnalysisResponse(BaseModel):
     id: str
     filename: str
     document_type: str
+    title: Optional[str] = None
     summary: str
     extracted_facts: List[ExtractedFact]
     explicit_dates: List[str] = []
     explicit_deadlines: List[str] = []
+    general_legal_deadlines: List[str] = []
     identified_issues: List[str] = []
     required_documents: List[str] = []
+    optional_supporting_evidence: List[str] = []
     recommended_actions: List[str] = []
+    immediate_action: Optional[str] = None
+    possible_next_steps: List[str] = []
+    potentially_applicable_rights: List[RightOrSchemeItem] = []
+    verified_sources: List[SourceReference] = []
     recommended_draft_type: Optional[str] = None
     is_demo: bool = False
+    provider: str = "fallback"
+    mode: str = "fallback"
 
 # --- Scheme Check ---
 class SchemeCheckRequest(BaseModel):

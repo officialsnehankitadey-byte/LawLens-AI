@@ -213,26 +213,58 @@ Document Text:
 
 Return this exact JSON structure:
 {{
-  "document_type": "Precise document type (e.g. Government Notice, Consumer Complaint, RTI Application, etc.)",
-  "summary": "2-3 sentence summary of what this document is about and what it requires",
-  "identified_issues": ["Issue 1", "Issue 2"],
-  "required_documents": ["Doc 1", "Doc 2"],
-  "recommended_actions": ["Action 1", "Action 2", "Action 3"],
+  "document_type": "Precise document type (e.g., Consumer Complaint Acknowledgment, Government Notice, RTI Application, etc.)",
+  "title": "Descriptive title of the actual issue in the document (e.g. 'Defective Goods & Consumer Redressal', 'Defective Product & Unresolved Replacement Request', 'Application Clarification & Document Verification Notice'). Do NOT use titles like 'Mandatory Refund', 'Refund Refusal', 'Compensation Claim', 'Legal Notice', or 'Court Complaint' unless explicitly present in the document text.",
+  "summary": "Factual 2-3 sentence summary generated STRICTLY from document facts. If a consumer submitted a complaint regarding defective goods and seller requested evidence, state '[Complainant] submitted a complaint regarding [Product] purchased from [Seller]. [Seller] requested [Required Docs] within [Deadline] so the complaint can be reviewed.' Do NOT say '[Complainant] received a notice from [Seller]' unless the document explicitly establishes that framing.",
+  "extracted_facts": [
+    {{
+      "fact": "Fact explicitly stated in document text (e.g., Complainant: Ananya Mehta, Seller: BrightCart Online Services, Product: Wireless Noise-Cancelling Headphones, Defect: stopped charging after five days of use, Seller response: seller did not provide a replacement after initial request)",
+      "confidence": "high",
+      "category": "document_fact"
+    }}
+  ],
+  "explicit_dates": ["Explicit date found in text"],
+  "explicit_deadlines": ["Explicit document deadline stated in text (e.g. '10 days from the date of the notice'). Return [] if no deadline is present in text."],
+  "general_legal_deadlines": [],
+  "identified_issues": ["Short title describing actual issue in document"],
+  "required_documents": ["ONLY list items explicitly requested in the document text. Do NOT add unrequested documents like Bank statement, Aadhaar, PAN, ID proof, or Payment transaction statement."],
+  "optional_supporting_evidence": ["Optional extra documents that AI suggests might be useful as supporting evidence"],
+  "immediate_action": "Single immediate action grounded strictly in the document request (e.g., 'Submit requested invoice/order confirmation, defect photos/video, and previous communication to BrightCart Online Services within the 10-day deadline stated in the document.')",
+  "possible_next_steps": ["Optional next steps if unresolved after submitting evidence (e.g. 'If the issue remains unresolved after the requested evidence is submitted, consider contacting the National Consumer Helpline or appropriate consumer grievance authority.')"],
+  "potentially_applicable_rights": [
+    {{
+      "topic": "Name of law/right (e.g. Consumer Rights under Consumer Protection Act, 2019)",
+      "explanation": "Cautious explanation using 'may', 'potentially applicable', 'depending on facts'",
+      "relevance_reason": "Why this legal framework may apply",
+      "authority": "Relevant authority name (e.g., Consumer Commission having appropriate jurisdiction)",
+      "action_recommended": "Optional recommended action",
+      "source_url": "https://consumerhelpline.gov.in"
+    }}
+  ],
+  "verified_sources": [
+    {{
+      "source_name": "National Consumer Helpline (NCH)",
+      "title": "Consumer Grievance Portal",
+      "url": "https://consumerhelpline.gov.in",
+      "relevance": "High",
+      "verification_status": "verified"
+    }}
+  ],
   "recommended_draft_type": "one of: rti, consumer_complaint, grievance, appeal"
 }}
 
-Rules:
-- CRITICAL: Base ALL output exclusively on the document text provided above. Do NOT use demo scenarios, template facts, or example data such as "damaged goods", "delivered in a damaged state", or "seller refusal emails" unless those exact phrases appear in the document text.
-- Preserve verbatim facts from the document. If the document states the product "stopped charging after five days", preserve that exact fact. If the document states "seller did not provide a replacement after the initial request", preserve that exact fact.
-- Only use Demo/Fallback Mode when no usable document text is available.
-- Extract ONLY facts present in the document text. Do NOT invent dates, deadlines, names, or reference numbers.
-- required_documents must ONLY list items explicitly requested in the document. If none, return [].
-- Do not fabricate legal conclusions not supported by the text.
-- Do NOT state that sending a legal notice is a mandatory or required prerequisite before filing a consumer complaint. A formal legal notice is an optional pre-litigation step — frame it as such if mentioned at all.
-- Remove any statement that replacement was requested, refused, delayed, or not provided unless explicitly supported by the document text. Use only verified facts.
-- For Step 2's "Why it matters" statement (and all deadline steps), do NOT claim that meeting the deadline prevents rejection or dismissal unless the notice expressly states that consequence. State that timely submission helps ensure the requested evidence is considered during processing.
-- When describing the National Consumer Helpline (NCH), state: "NCH provides a government-operated pre-litigation grievance redress mechanism that can facilitate resolution with the concerned company." Do NOT describe NCH itself as mediation.
-- Respond ONLY with valid JSON. No markdown code fences.
+STRICT GROUNDING RULES (MUST FOLLOW):
+1. LAW LENS MUST NEVER PRESENT AN INFERENCE AS A DOCUMENT FACT.
+2. Every result must distinguish between:
+   - DOCUMENT-DERIVED FACTS (Facts explicitly found in uploaded document)
+   - LEGAL / CIVIC GUIDANCE (General guidance retrieved from legal sources)
+   - INFERENCE (AI interpretation)
+3. DOCUMENT DEADLINE: Include ONLY deadlines explicitly stated in the document text. If none, explicit_deadlines must be []. Do NOT invent 15-day, 30-day, or 45-day generic deadlines.
+4. REQUIRED DOCUMENTS: Include ONLY documents explicitly requested in the document text. Put extra AI suggestions under optional_supporting_evidence.
+5. NO UNSUPPORTED LEGAL ESCALATION: Do NOT automatically tell the user to file a court case, file an appeal, send a mandatory legal notice, or demand a refund unless explicitly stated in the document or framed as optional next steps.
+6. Use cautious legal language: 'may', 'potentially applicable', 'depending on the facts', 'verify applicable requirements'.
+7. Do NOT fabricate URLs or citations. Use verified official URLs like https://consumerhelpline.gov.in, https://e-daakhil.nic.in, https://rtionline.gov.in, https://pgportal.gov.in.
+8. Respond ONLY with valid JSON. No markdown code fences.
 """
         try:
             response = self.client.models.generate_content(
@@ -246,24 +278,82 @@ Rules:
                     raw = raw[4:]
             data = json.loads(raw.strip())
 
+            # Parse extracted facts
+            facts = [
+                ExtractedFact(
+                    fact=f.get("fact", "") if isinstance(f, dict) else str(f),
+                    confidence=f.get("confidence", "high") if isinstance(f, dict) else "high",
+                    category=f.get("category", "document_fact") if isinstance(f, dict) else "document_fact"
+                )
+                for f in data.get("extracted_facts", [])
+                if (isinstance(f, dict) and f.get("fact")) or (isinstance(f, str) and f.strip())
+            ]
+            if not facts:
+                facts = base.extracted_facts
+
+            # Parse rights
+            rights = [
+                RightOrSchemeItem(
+                    topic=r.get("topic", ""),
+                    explanation=r.get("explanation", ""),
+                    relevance_reason=r.get("relevance_reason", ""),
+                    authority=r.get("authority"),
+                    action_recommended=r.get("action_recommended", ""),
+                    source_url=r.get("source_url") or self._resolve_official_url(r.get("topic", ""))
+                )
+                for r in data.get("potentially_applicable_rights", [])
+                if isinstance(r, dict)
+            ]
+            if not rights:
+                rights = base.potentially_applicable_rights
+
+            # Parse sources
+            sources = [
+                SourceReference(
+                    source_name=s.get("source_name", "Official Legal Portal"),
+                    title=s.get("title", "Government Provision"),
+                    url=s.get("url") or self._resolve_official_url(s.get("source_name", "")),
+                    relevance=s.get("relevance", "High"),
+                    verification_status=s.get("verification_status", "verified")
+                )
+                for s in data.get("verified_sources", [])
+                if isinstance(s, dict)
+            ]
+            if not sources:
+                sources = base.verified_sources
+
+            # Combine actions
+            immediate = data.get("immediate_action") or base.immediate_action
+            next_steps = data.get("possible_next_steps") or base.possible_next_steps
+            rec_actions = [immediate] + next_steps if immediate else base.recommended_actions
+
             return DocumentAnalysisResponse(
                 id=base.id,
                 filename=filename,
                 document_type=data.get("document_type", base.document_type),
+                title=data.get("title", base.title),
                 summary=data.get("summary", base.summary),
-                extracted_facts=base.extracted_facts,        # Keep deterministic facts
-                explicit_dates=base.explicit_dates,          # Keep deterministic dates
-                explicit_deadlines=base.explicit_deadlines,  # Keep deterministic deadlines
+                extracted_facts=facts,
+                explicit_dates=data.get("explicit_dates", base.explicit_dates),
+                explicit_deadlines=data.get("explicit_deadlines", base.explicit_deadlines),
+                general_legal_deadlines=data.get("general_legal_deadlines", base.general_legal_deadlines),
                 identified_issues=data.get("identified_issues", base.identified_issues),
                 required_documents=data.get("required_documents", base.required_documents),
-                recommended_actions=data.get("recommended_actions", base.recommended_actions),
+                optional_supporting_evidence=data.get("optional_supporting_evidence", base.optional_supporting_evidence),
+                recommended_actions=rec_actions,
+                immediate_action=immediate,
+                possible_next_steps=next_steps,
+                potentially_applicable_rights=rights,
+                verified_sources=sources,
                 recommended_draft_type=data.get("recommended_draft_type", base.recommended_draft_type),
-                is_demo=False
+                is_demo=False,
+                provider="gemini",
+                mode="ai"
             )
 
         except Exception as e:
             logger.error(f"Gemini analyze_document error: {e}")
-            return base  # Return deterministic result on failure
+            return base  # Return deterministic fallback result on failure
 
     # ------------------------------------------------------------------ #
     #  DRAFT GENERATION
