@@ -66,21 +66,31 @@ export interface SituationAnalysisResponse {
 export interface ExtractedFact {
   fact: string;
   confidence?: string;
+  category?: string;
 }
 
 export interface DocumentAnalysisResponse {
   id: string;
   filename: string;
   document_type: string;
+  title?: string;
   summary: string;
   extracted_facts: ExtractedFact[];
   explicit_dates: string[];
   explicit_deadlines: string[];
+  general_legal_deadlines?: string[];
   identified_issues: string[];
   required_documents: string[];
+  optional_supporting_evidence?: string[];
   recommended_actions: string[];
+  immediate_action?: string;
+  possible_next_steps?: string[];
+  potentially_applicable_rights?: RightOrSchemeItem[];
+  verified_sources?: SourceReference[];
   recommended_draft_type?: string;
   is_demo: boolean;
+  provider?: string;
+  mode?: string;
 }
 
 export interface DraftRequest {
