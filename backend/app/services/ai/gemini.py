@@ -106,55 +106,68 @@ class GeminiProvider(AIProvider):
         if not self.is_available():
             return await self._fallback_or_secondary("analyze_problem", request)
 
-        prompt = f"""You are LawLens AI — a premier civic and legal empowerment assistant for Indian citizens.
-The user describes their issue in plain language. You MUST automatically identify and predict the legal category, provide comprehensive step-by-step procedural solutions, and cite verified Indian laws (e.g. BNS/BNSS, Consumer Protection Act 2019, IT Act 2000, RTI Act 2005, Transfer of Property Act, etc.).
+        prompt = f"""You are LawLens AI — a friendly, reassuring legal and civic empowerment assistant for Indian citizens.
+Your job is to explain complex Indian laws (BNS/BNSS, Consumer Protection Act, IT Act, etc.) in VERY SIMPLE, PLAIN, EASY-TO-UNDERSTAND language that any regular person can understand immediately without feeling overwhelmed.
 
 Problem: {request.problem}
 Location: {request.location or "India"}
 
+CRITICAL INSTRUCTIONS:
+1. TONE & READABILITY: Use clear, simple, conversational language. Avoid dense legal jargon. Explain terms simply.
+2. REASSURANCE & PEACE OF MIND: If the user is facing a scary situation (e.g. cyber theft, police harassment, landlord eviction, divorce, notice), give them a calming, reassuring message telling them they are protected by law and what immediate steps will keep them safe.
+3. CONCRETE ACTION GUIDANCE: Clearly guide them on what to do next — e.g. whether they need to call a helpline (1930/1915), go to the police station, file on a website, or contact one of the suggested lawyers.
+
 Analyze the problem and return a JSON object ONLY (no markdown, no code fences):
 {{
   "predicted_category": "one of: criminal, consumer, cyber_crime, property_tenancy, family_matrimonial, rti, employment, corporate, civil",
-  "predicted_category_name": "Human readable name, e.g. Criminal Defense & Penal Law / Cyber Crime & Digital Fraud / Consumer Protection",
+  "predicted_category_name": "Friendly category name e.g. Cyber Fraud & Online Theft / Criminal Defense & Police Matters / Consumer Complaints & Refunds",
   "category_confidence": "high",
-  "category_reasoning": "Clear explanation of why this legal category applies to the user's situation",
-  "situation_summary": "One-sentence executive summary of the user's situation",
-  "detected_issue": "Concise title of the core legal/civic grievance",
+  "category_reasoning": "Simple 1-2 sentence explanation of why this category applies in everyday words",
+  "reassurance_message": "Warm, calming reassurance message for the user assuring them of their legal rights and that this can be resolved",
+  "urgency_level": "one of: high_urgency, moderate, standard",
+  "urgency_reason": "Why this urgency level applies in simple words (e.g. 'Act within 24 hours to increase chances of freezing transferred money')",
+  "situation_summary": "Simple one-sentence summary of what happened in plain words",
+  "detected_issue": "Concise, simple title of the issue",
   "user_provided_facts": ["Key fact stated by user"],
   "applicable_rights_or_schemes": [
     {{
-      "topic": "Name of specific Act / Section / Provision (e.g. Consumer Protection Act 2019, Section 66D IT Act, Section 173 BNSS)",
-      "explanation": "What the law provides and how it protects the citizen",
-      "relevance_reason": "Why this provision directly applies to this problem",
-      "authority": "Concerned forum / statutory authority",
-      "action_recommended": "Specific legal step under this section"
+      "topic": "Name of Law / Section in simple words",
+      "explanation": "What this right gives you in plain, everyday language",
+      "relevance_reason": "How this directly protects you right now",
+      "authority": "Authority name",
+      "action_recommended": "Simple action you can take under this right"
     }}
   ],
   "action_plan": {{
-    "immediate_action": "The single most critical step to take immediately",
+    "immediate_action": "The single easiest & most important thing to do right now",
+    "reassurance_message": "Same reassuring message",
+    "urgency_level": "one of: high_urgency, moderate, standard",
+    "urgency_reason": "Urgency reason",
     "ordered_steps": [
       {{
         "step_number": 1,
-        "title": "Clear step title",
-        "description": "Concrete, step-by-step action instructions",
-        "why_it_matters": "Legal significance of this step",
-        "required_documents": ["Document required for this step"]
+        "title": "Short, clear action title (e.g. Call Helpline 1930 / Visit Local Police Station / File on NCH Portal)",
+        "simple_summary": "1 simple sentence: what to do right now",
+        "description": "Clear step-by-step instructions in simple language on how to do this",
+        "action_type": "one of: call_helpline, go_to_police, contact_lawyer, online_portal, gather_documents, send_notice",
+        "why_it_matters": "Why this step helps you in simple terms",
+        "practical_tip": "A handy practical insider tip (e.g. 'Ask for an acknowledgment receipt / GD number before leaving')",
+        "required_documents": ["Simple document name e.g. Bank statement PDF, Screenshot of WhatsApp chat"]
       }}
     ],
-    "required_documents": ["Document 1", "Document 2"],
-    "target_authority": "Name of main authority or court to approach",
-    "expected_timeline": "Realistic estimated timeline",
-    "warnings": ["Important caution or deadline warning"]
+    "required_documents": ["Simple document 1", "Simple document 2"],
+    "target_authority": "Plain name of authority or court",
+    "expected_timeline": "Realistic timeline in plain words (e.g. 7 to 15 days)",
+    "warnings": ["Simple caution or what NOT to do"]
   }},
   "recommended_draft_type": "one of: rti, consumer_complaint, grievance, appeal, police_complaint, legal_notice",
-  "disclaimer": "LawLens AI provides legal information and guidance for educational purposes. For formal representation, consult a qualified advocate."
+  "disclaimer": "LawLens AI provides helpful civic information. For formal court representation, consult a qualified lawyer."
 }}
 
-Legal Accuracy Rules (MUST follow):
-- Do NOT state that sending a legal notice is a mandatory step before filing a consumer complaint. Under the Consumer Protection Act 2019, a consumer may file directly.
-- For criminal issues, cite Bharatiya Nyaya Sanhita (BNS) / BNSS alongside IPC / CrPC as applicable.
-- For cyber frauds, mention immediate reporting to Helpline 1930 and cybercrime.gov.in.
-- For every legal claim, ensure realistic remedies and accurate government authorities.
+Legal Accuracy Rules:
+- Consumer complaints can be filed directly without mandatory legal notice.
+- Criminal matters: Mention BNS / BNSS & IPC / CrPC in simple terms.
+- Cyber crime: Emphasize dialing 1930 & reporting on cybercrime.gov.in immediately.
 
 Respond ONLY with valid JSON.
 """
@@ -184,18 +197,28 @@ Respond ONLY with valid JSON.
             ]
 
             raw_plan = data.get("action_plan", {})
+            reassurance = data.get("reassurance_message") or raw_plan.get("reassurance_message") or "You have clear rights under Indian law. Follow these practical steps calmly to protect your interests."
+            urgency = data.get("urgency_level") or raw_plan.get("urgency_level") or "moderate"
+            urgency_reason = data.get("urgency_reason") or raw_plan.get("urgency_reason")
+
             steps = [
                 ActionStep(
                     step_number=s.get("step_number", i + 1),
                     title=s.get("title", ""),
+                    simple_summary=s.get("simple_summary") or s.get("title", ""),
                     description=s.get("description", ""),
+                    action_type=s.get("action_type", "general"),
                     why_it_matters=s.get("why_it_matters", ""),
+                    practical_tip=s.get("practical_tip"),
                     required_documents=s.get("required_documents", [])
                 )
                 for i, s in enumerate(raw_plan.get("ordered_steps", []))
             ]
             plan = ActionPlan(
                 immediate_action=raw_plan.get("immediate_action", "Gather and organize all relevant documents and evidence."),
+                reassurance_message=reassurance,
+                urgency_level=urgency,
+                urgency_reason=urgency_reason,
                 ordered_steps=steps,
                 required_documents=raw_plan.get("required_documents", [d for s in steps for d in s.required_documents]),
                 target_authority=raw_plan.get("target_authority"),
@@ -240,6 +263,9 @@ Respond ONLY with valid JSON.
                 predicted_category_name=cat_name,
                 category_confidence=data.get("category_confidence", "high"),
                 category_reasoning=data.get("category_reasoning", "Identified based on factual circumstances and relevant statutes."),
+                reassurance_message=reassurance,
+                urgency_level=urgency,
+                urgency_reason=urgency_reason,
                 applicable_rights_or_schemes=rights,
                 action_plan=plan,
                 recommended_draft_type=data.get("recommended_draft_type", "grievance"),

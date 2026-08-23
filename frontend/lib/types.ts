@@ -58,8 +58,11 @@ export interface RightOrSchemeItem {
 export interface ActionStep {
   step_number: number;
   title: string;
+  simple_summary?: string;
   description: string;
+  action_type?: string;
   why_it_matters: string;
+  practical_tip?: string;
   required_documents?: string[];
   authority?: string;
   submission_method?: string;
@@ -67,6 +70,9 @@ export interface ActionStep {
 
 export interface ActionPlan {
   immediate_action: string;
+  reassurance_message?: string;
+  urgency_level?: string;
+  urgency_reason?: string;
   ordered_steps: ActionStep[];
   required_documents: string[];
   target_authority?: string;
@@ -83,6 +89,9 @@ export interface SituationAnalysisResponse {
   predicted_category_name?: string;
   category_confidence?: string;
   category_reasoning?: string;
+  reassurance_message?: string;
+  urgency_level?: string;
+  urgency_reason?: string;
   applicable_rights_or_schemes: RightOrSchemeItem[];
   eligibility_assessment?: string;
   action_plan: ActionPlan;

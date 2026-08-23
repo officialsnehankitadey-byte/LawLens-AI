@@ -16,8 +16,7 @@ from app.services.lawyer_service import LawyerService
 class FallbackProvider(AIProvider):
     """
     Deterministic Fallback & Demo Provider for offline / API key-less operations.
-    Guarantees LawLens works continuously without external API availability.
-    Automatically classifies categories and attaches 5 real verified Indian lawyers.
+    Provides plain-language, conversational guidance with reassurance and 5 real Indian lawyers.
     """
     def __init__(self):
         sample_path = os.path.join(os.path.dirname(__file__), "../../knowledge/sample_data.json")
@@ -51,223 +50,282 @@ class FallbackProvider(AIProvider):
             cat_key = "consumer"
 
         display_names = {
-            "criminal": "Criminal Defense & Penal Procedure (BNS / BNSS)",
-            "cyber_crime": "Cyber Crime, IT Act & Online Financial Fraud",
-            "consumer": "Consumer Protection & Deficiency in Service",
-            "property_tenancy": "Property, Real Estate & Tenancy Disputes",
-            "family_matrimonial": "Family, Matrimonial & Domestic Relations",
-            "rti": "Right to Information (RTI Act, 2005) & Civic Transparency",
-            "employment": "Labor, Employment & Workplace Service Law",
+            "criminal": "Criminal Defense & Police Matters",
+            "cyber_crime": "Cyber Crime & Online Financial Fraud",
+            "consumer": "Consumer Rights & Defective Service Complaints",
+            "property_tenancy": "Property, Real Estate & Tenant Disputes",
+            "family_matrimonial": "Family, Matrimonial & Maintenance Rights",
+            "rti": "Right to Information (RTI) & Public Records",
+            "employment": "Employment, Salary & Workplace Rights",
             "corporate": "Commercial Contracts & Financial Disputes",
-            "civil": "Civil Litigation & Public Rights"
+            "civil": "Civil Rights & Public Administration"
         }
 
         reasonings = {
-            "criminal": "The situation involves allegations of penal offenses, potential police proceedings, or immediate defense/bail remedies under Bharatiya Nyaya Sanhita (BNS) / CrPC.",
-            "cyber_crime": "The matter pertains to digital fraud, unauthorized electronic transactions, or cyber harassment governed under Information Technology Act, 2000 and Cyber Cell jurisdiction.",
-            "consumer": "The issue relates to purchase of goods/services, deficient delivery, warranty denial, or unfair trade practices governed under Consumer Protection Act, 2019.",
-            "property_tenancy": "The dispute centers on real estate ownership, tenancy eviction, lease agreement violations, or developer delivery delays under State Rent Laws and RERA.",
-            "family_matrimonial": "The issue involves matrimonial dispute, maintenance claims, child custody, or domestic relief governed under Personal Marriage Laws and DV Act.",
-            "rti": "The request seeks official public records, expenditure transparency, or departmental verification from a Public Authority under RTI Act, 2005.",
-            "employment": "The grievance relates to workplace rights, wrongful termination, unpaid compensation, or statutory dues under Industrial and Service Laws.",
-            "corporate": "The dispute involves contractual agreements, financial instruments, or commercial transactions.",
-            "civil": "The matter involves civil rights, public administration, or dispute resolution."
+            "criminal": "Your situation involves police complaints, potential allegations, or immediate bail protection under criminal statutes.",
+            "cyber_crime": "Your issue involves unauthorized digital transactions, online cheating, or cyber harassment governed under the IT Act.",
+            "consumer": "Your issue is with a seller, company, or service provider failing to deliver promised quality, warranty, or refunds.",
+            "property_tenancy": "Your dispute concerns landlord-tenant rules, eviction, security deposit, or real estate possession.",
+            "family_matrimonial": "Your situation relates to marital rights, maintenance support, child custody, or domestic protection.",
+            "rti": "Your request is to inspect government records, project funds, or tender sanctions under the RTI Act.",
+            "employment": "Your grievance concerns workplace dues, wrongful termination, or unpaid compensation from an employer.",
+            "corporate": "Your issue relates to business contracts, payments, or commercial agreements.",
+            "civil": "Your matter relates to citizen rights and administrative dispute resolution."
         }
 
         return {
             "category": cat_key,
             "category_name": display_names.get(cat_key, "Civil & Civic Law"),
-            "reasoning": reasonings.get(cat_key, "AI classified based on key factual circumstances and applicable statutory remedies.")
+            "reasoning": reasonings.get(cat_key, "Identified from the key factual events you described.")
         }
 
     async def analyze_problem(self, request: ProblemRequest) -> SituationAnalysisResponse:
-        """Deterministic fallback analysis using the user's problem description with auto category prediction and 5 real lawyers."""
+        """Deterministic fallback analysis with simple human-readable guidance and reassurance."""
         pred = self._predict_category(request.problem, request.category or "auto")
         cat_key = pred["category"]
         loc = request.location or "India"
 
-        # Generate step-by-step solutions tailored to the predicted category
         if cat_key == "criminal":
-            immediate_action = "Gather all written communications, timestamps, witness statements, and relevant records before police interaction."
+            urgency_level = "high_urgency"
+            urgency_reason = "Criminal matters and police encounters require quick, careful handling to protect your personal liberty."
+            reassurance = "Take a deep breath — you are entitled to full protection under Indian law (Article 22 & BNSS). Police cannot arbitrarily harass or arrest anyone without following mandatory legal safeguards. Follow the steps below calmly."
+            immediate_action = "Gather all chat records, timestamps, and witness details calmly. Do not sign any blank papers or give verbal confessions."
             steps = [
                 ActionStep(
                     step_number=1,
-                    title="Document Incident Chronicle & Preserve Evidence",
-                    description="Compile a chronological log of events, call recordings, WhatsApp messages, emails, and medical/financial records.",
-                    why_it_matters="Accurate chronological evidence forms the backbone of police complaints and bail applications.",
-                    required_documents=["Chronological Timeline", "Digital Evidence Screenshots", "Identity Proof"]
+                    title="Organize Your Evidence & Create a Simple Timeline",
+                    simple_summary="Write down exactly what happened with dates, times, and screenshots.",
+                    description="Keep a clear record of WhatsApp chats, phone recordings, payment receipts, and witness names on your phone or USB drive.",
+                    action_type="gather_documents",
+                    why_it_matters="Clear facts will protect you from false claims and help your lawyer secure immediate relief.",
+                    practical_tip="Make 3 physical copies of all documents before meeting anyone.",
+                    required_documents=["Chronological Timeline", "Chat / Call Screenshots", "Identity Proof (Aadhaar / Voter ID)"]
                 ),
                 ActionStep(
                     step_number=2,
-                    title="Lodge Written Complaint / Avail Section 175 BNSS (Sec 156(3) CrPC)",
-                    description="Submit a formal written complaint to the Station House Officer (SHO). If police refuse FIR registration, escalate in writing to the Superintendent of Police (DCP/SP) and approach Judicial Magistrate.",
-                    why_it_matters="Establishes formal official record and triggers mandatory statutory investigation procedures.",
+                    title="Lodge a Written Police Complaint / Obtain Official GD Number",
+                    simple_summary="Submit a written signed complaint to the Police Station In-Charge (SHO).",
+                    description="Go with a friend or family member. Hand over your written application. If the police refuse to register an FIR, you have the legal right to escalate to the DCP/SP or approach the Magistrate.",
+                    action_type="go_to_police",
+                    why_it_matters="An official complaint copy with police receiving stamp gives you formal legal protection.",
+                    practical_tip="Always ask for the Daily Diary (GD) number or a signed receiving stamp on your photocopy.",
                     authority="Local Police Station / DCP Office / Judicial Magistrate Court",
-                    submission_method="Written Signed Application with Acknowledgment Copy"
+                    submission_method="In-person Written Complaint with Acknowledgment Copy"
                 ),
                 ActionStep(
                     step_number=3,
-                    title="Engage Experienced Criminal Advocate for Anticipatory / Regular Bail or FIR Quashing",
-                    description="Consult with a verified criminal defense advocate to assess whether Anticipatory Bail (Sec 482 BNSS / 438 CrPC) or High Court Quashing (Sec 528 BNSS / 482 CrPC) is warranted.",
-                    why_it_matters="Protects personal liberty against arbitrary arrest and ensures rigorous procedural defense.",
-                    authority="Sessions Court / High Court of Jurisdiction"
+                    title="Consult One of the 5 Verified Criminal Defense Lawyers Below",
+                    simple_summary="Speak to a practicing criminal advocate for Anticipatory Bail or FIR quashing.",
+                    description="If there is any threat of arrest or false charges, a verified criminal defense advocate will immediately file for Anticipatory Bail in Sessions Court or High Court.",
+                    action_type="contact_lawyer",
+                    why_it_matters="Anticipatory bail guarantees you cannot be jailed while the case is being investigated.",
+                    practical_tip="Reach out to the Senior Advocates recommended in the lawyer list below.",
+                    authority="District & Sessions Court / State High Court"
                 )
             ]
             rights = [
                 RightOrSchemeItem(
-                    topic="Bharatiya Nagarik Suraksha Sanhita (BNSS) / CrPC — Rights of the Accused & Complainant",
-                    explanation="Ensures statutory right to receive copy of FIR free of cost, protection against unlawful custody (Article 22), and right to legal representation.",
-                    relevance_reason="Directly governs police investigation and court bail procedures in India.",
-                    authority="State Police Department & Criminal Courts",
-                    action_recommended="Demand a dated official acknowledgment / GD number for every complaint submitted.",
+                    topic="Your Constitutional Rights & Bharatiya Nagarik Suraksha Sanhita (BNSS)",
+                    explanation="You have the legal right to know why you are being questioned, the right to free copy of FIR, and the right to consult an advocate of your choice at all times.",
+                    relevance_reason="Directly shields citizens from unlawful police detention or harassment.",
+                    authority="State Police & Criminal Courts",
+                    action_recommended="Always request a written summons/notice before appearing for police questioning.",
                     source_url="https://mha.gov.in"
                 )
             ]
             draft_type = "police_complaint"
 
         elif cat_key == "cyber_crime":
-            immediate_action = "Immediately dial 1930 (National Cyber Crime Reporting Helpline) and report transaction fraud on cybercrime.gov.in within the golden hour."
+            urgency_level = "high_urgency"
+            urgency_reason = "Reporting online financial fraud within the first 24 hours gives police the highest chance to freeze stolen money."
+            reassurance = "Don't panic — unauthorized bank transactions are strictly protected under RBI rules. If you report quickly, banks can freeze the scammer's account and you are entitled to full zero-liability reimbursement."
+            immediate_action = "Immediately dial 1930 (National Cyber Crime Helpline) and block your bank card/UPI access."
             steps = [
                 ActionStep(
                     step_number=1,
-                    title="Block Accounts & Report on 1930 Helpline",
-                    description="Immediately contact your bank to freeze compromised cards/accounts and call the National Cyber Crime Toll-Free Number 1930 to freeze fraudulent destination accounts.",
-                    why_it_matters="Quick reporting within golden hour enables banks to freeze illicit transactions before money is withdrawn.",
-                    required_documents=["Bank Statement with UTR Numbers", "Transaction SMS/Email", "Fraudulent Link / App Details"]
+                    title="Call Cyber Crime Toll-Free Helpline 1930 Immediately",
+                    simple_summary="Dial 1930 right now to freeze the fraud transaction.",
+                    description="Tell the operator your bank name, account number, transaction UTR number, and time. The helpline coordinates directly with banks to freeze the destination account.",
+                    action_type="call_helpline",
+                    why_it_matters="Quick action within the 'golden hour' halts the scammer from withdrawing cash at ATMs.",
+                    practical_tip="Keep your transaction SMS or bank notification open while making the call.",
+                    required_documents=["Bank Statement with UTR Numbers", "Transaction SMS / Screenshot", "Fake Link / Phishing Details"]
                 ),
                 ActionStep(
                     step_number=2,
-                    title="File Complaint on National Cyber Crime Portal (cybercrime.gov.in)",
-                    description="Register a detailed complaint under 'Financial Fraud' or 'Other Cyber Crimes' with complete digital footprints and screenshots.",
-                    why_it_matters="Generates an official Cyber Crime Acknowledgment Number required by banks and police.",
-                    authority="National Cyber Crime Reporting Portal (MHA)",
-                    submission_method="Online Portal (cybercrime.gov.in) / Helpline 1930"
+                    title="Register an Official Complaint on cybercrime.gov.in",
+                    simple_summary="Fill out the online fraud report on the Government Cyber Portal from your phone.",
+                    description="Visit https://cybercrime.gov.in, select 'Report Financial Fraud', and upload transaction screenshots. You will receive an official Cyber Crime Acknowledgment Number.",
+                    action_type="online_portal",
+                    why_it_matters="Banks and police require this government acknowledgment ID to process money refund claims.",
+                    practical_tip="Download the PDF copy of your complaint immediately after submitting.",
+                    authority="National Cyber Crime Reporting Portal (Ministry of Home Affairs)",
+                    submission_method="Online Portal (cybercrime.gov.in)"
                 ),
                 ActionStep(
                     step_number=3,
-                    title="Submit Disputed Transaction Grievance to Bank Nodal Officer & RBI Ombudsman",
-                    description="Submit formal zero-liability claim under RBI Circular on Unauthorized Electronic Banking Transactions within 3 days.",
-                    why_it_matters="RBI regulations mandate zero or limited liability for customers who report unauthorized digital transactions without delay.",
-                    authority="Bank Principal Nodal Officer & RBI Integrated Ombudsman (cms.rbi.org.in)"
+                    title="Submit Zero-Liability Claim to Your Bank Branch Manager",
+                    simple_summary="Inform your bank in writing within 3 days for complete refund.",
+                    description="Under Reserve Bank of India (RBI) rules, if a customer reports unauthorized electronic fraud within 3 working days, customer liability is ZERO and bank must credit the funds.",
+                    action_type="gather_documents",
+                    why_it_matters="Enforces RBI's mandatory customer compensation policy.",
+                    practical_tip="Submit a written letter to your bank branch with a copy of your cyber complaint and get a signed receiving stamp.",
+                    authority="Bank Nodal Officer & RBI Integrated Ombudsman (cms.rbi.org.in)"
                 )
             ]
             rights = [
                 RightOrSchemeItem(
-                    topic="Information Technology Act, 2000 & RBI Customer Protection Circular",
-                    explanation="Provides legal framework for prosecuting electronic identity theft, cheating by impersonation (Section 66D), and entitles customers to liability reimbursement for unauthorized transactions.",
-                    relevance_reason="Protects digital transaction users and mandates security obligations on banks.",
+                    topic="RBI Customer Protection Guidelines & Section 66D IT Act",
+                    explanation="Protects citizens against electronic banking theft and cheating by impersonation. Guarantees zero liability when fraud is reported promptly.",
+                    relevance_reason="Forces banks to compensate victims of unauthorized digital debits.",
                     authority="Cyber Crime Cell & RBI Ombudsman",
-                    action_recommended="File formal complaint on cybercrime.gov.in and submit copy to bank branch manager.",
+                    action_recommended="File formal claim with Bank Nodal Officer and escalate to RBI Ombudsman if delayed.",
                     source_url="https://cybercrime.gov.in"
                 )
             ]
             draft_type = "grievance"
 
         elif cat_key == "property_tenancy":
-            immediate_action = "Review your original registered lease deed / sale agreement / title documents and compile rent payment receipts."
+            urgency_level = "moderate"
+            urgency_reason = "Tenancy issues have standard legal remedies under State Rent Control & RERA."
+            reassurance = "No landlord has the legal authority to cut your electricity, water, or lock you out without a formal court eviction order. You are strongly protected under Indian tenancy laws."
+            immediate_action = "Keep your original rent agreement, security deposit transfer receipts, and rent payment proofs safe."
             steps = [
                 ActionStep(
                     step_number=1,
-                    title="Verify Title & Contractual Terms",
-                    description="Examine the tenancy contract, notice period clauses, security deposit refund terms, or builder agreement handover milestones.",
-                    why_it_matters="Legal remedies strictly depend on the written covenants of the executed agreement.",
-                    required_documents=["Registered Agreement / Lease", "Rent Receipts / Bank Transfer Proofs", "Correspondence Notice"]
+                    title="Collect Your Rent Agreement & Payment Proofs",
+                    simple_summary="Organize your lease agreement, bank transfer proofs, and deposit slips.",
+                    description="Ensure you have written records showing on-time rent payment and security deposit submission.",
+                    action_type="gather_documents",
+                    why_it_matters="Proves lawful possession and prevents false allegations of rent default.",
+                    practical_tip="Take photos of your flat condition and utility meters as backup proof.",
+                    required_documents=["Registered Agreement / Lease", "Bank Transfer Proofs / UPI Receipts", "Deposit Acknowledgment"]
                 ),
                 ActionStep(
                     step_number=2,
-                    title="Issue Formal Legal Notice",
-                    description="Send a formal written legal notice via Registered Post with Acknowledgment Due (RPAD) giving 15 to 30 days to remedy the breach.",
-                    why_it_matters="Statutory pre-requisite for initiating eviction suits or RERA / Civil Court litigation.",
-                    authority="Concerned Landlord / Tenant / Builder"
+                    title="Send a Formal Legal Notice via Registered Post",
+                    simple_summary="Send a written demand notice giving 15 days to resolve the issue.",
+                    description="Draft a formal letter demanding restoration of amenities, deposit refund, or adherence to lease terms. Send via Speed Post.",
+                    action_type="send_notice",
+                    why_it_matters="A formal notice creates official legal proof if you need to approach the Rent Court or RERA.",
+                    practical_tip="Always keep the India Post tracking receipt as proof of delivery.",
+                    authority="Concerned Landlord / Tenant / Property Developer"
                 ),
                 ActionStep(
                     step_number=3,
-                    title="Approach RERA Authority or Civil / Rent Court",
-                    description="If unresolved, file a petition before Real Estate Regulatory Authority (RERA) or the competent Rent Controller.",
-                    why_it_matters="Enables judicial enforcement of refund, interest, damages, or lawful possession.",
-                    authority="State RERA / Rent Control Tribunal"
+                    title="Consult One of the 5 Property Advocates Below to Approach Rent Court / RERA",
+                    simple_summary="Engage a property advocate to obtain an immediate stay order or file in RERA.",
+                    description="If the landlord cuts amenities or withholds deposit, a property lawyer will file an emergency application before the Rent Controller or Civil Court.",
+                    action_type="contact_lawyer",
+                    why_it_matters="Courts can issue immediate restraining orders preventing unlawful eviction.",
+                    practical_tip="Consult one of the top property advocates listed in your location below.",
+                    authority="Rent Controller / State RERA Authority"
                 )
             ]
             rights = [
                 RightOrSchemeItem(
-                    topic="Transfer of Property Act, 1882 & Real Estate (Regulation and Development) Act (RERA)",
-                    explanation="Protects property holders, tenants, and homebuyers against illegal dispossession, arbitrary rent hikes, and builder defaults.",
-                    relevance_reason="Applies to tenancy disputes, eviction proceedings, and delayed flat possession.",
-                    authority="State RERA Authority & Civil Courts",
-                    action_recommended="Ensure all notices are dispatched via registered post with tracking proof.",
+                    topic="Transfer of Property Act & State Tenancy Acts",
+                    explanation="Prohibits landlords from resorting to self-help eviction or cutting essential services without judicial sanction.",
+                    relevance_reason="Protects tenants' right to peaceful possession and refund of security deposit.",
+                    authority="Rent Controller & Civil Courts",
+                    action_recommended="File police complaint if utilities are cut, and issue formal legal notice for deposit refund.",
                     source_url="https://mohua.gov.in"
                 )
             ]
             draft_type = "legal_notice"
 
         elif cat_key == "family_matrimonial":
-            immediate_action = "Secure original personal identification documents, marriage certificates, financial records, and correspondence."
+            urgency_level = "moderate"
+            urgency_reason = "Family matters require sensitive, step-by-step guidance and mediation."
+            reassurance = "You are legally entitled to maintenance, residence rights, child visitation, and protection from harassment under Indian Family Laws. These disputes can be resolved calmly and with dignity."
+            immediate_action = "Secure original identity records, marriage certificate, bank statements, and children's school documents."
             steps = [
                 ActionStep(
                     step_number=1,
-                    title="Document Financial Disclosures & Evidence",
-                    description="Gather bank statements, income tax returns, proof of joint assets, and communication history.",
-                    why_it_matters="Supreme Court guidelines (Rajnesh v. Neha) mandate comprehensive asset-liability affidavits for maintenance determination.",
-                    required_documents=["Marriage Certificate", "Income / ITR Proofs", "Communication Logs"]
+                    title="Organize Your Personal & Financial Records",
+                    simple_summary="Gather marriage certificates, bank statements, and income proofs.",
+                    description="Compile essential documents to establish your financial standing and marital history.",
+                    action_type="gather_documents",
+                    why_it_matters="Supreme Court requires full income & asset declarations for maintenance and child support.",
+                    practical_tip="Keep scanned digital copies in a private, password-protected email or drive.",
+                    required_documents=["Marriage Certificate", "Bank Statements / Salary Slips", "Identity Proofs"]
                 ),
                 ActionStep(
                     step_number=2,
-                    title="Engage in Formal Pre-Litigation Mediation",
-                    description="Approach the Family Court Mediation Center or DLSA (District Legal Services Authority) for conciliation.",
-                    why_it_matters="Facilitates peaceful, cost-effective resolution of custody, alimony, and asset separation.",
+                    title="Opt for Free Pre-Litigation Mediation via Legal Services Authority (DLSA)",
+                    simple_summary="Approach District Legal Services Authority for free conciliation.",
+                    description="DLSA provides trained mediators to help both parties arrive at a mutual, peaceful settlement regarding maintenance and custody without costly litigation.",
+                    action_type="online_portal",
+                    why_it_matters="Mediation saves years of court battles and allows peaceful resolution.",
+                    practical_tip="Mediation sessions are completely confidential and free of court fees.",
                     authority="District Legal Services Authority (DLSA) / Family Court Mediation Cell"
                 ),
                 ActionStep(
                     step_number=3,
-                    title="Initiate Appropriate Legal Petitions Before Family Court",
-                    description="File petition for mutual consent divorce (Sec 13B HMA), maintenance (Sec 144 BNSS / 125 CrPC), or domestic protection under DV Act.",
-                    why_it_matters="Secures judicial protection orders, child visitation rights, and monthly maintenance.",
+                    title="Consult One of the 5 Family Law Advocates Listed Below",
+                    simple_summary="Get legal representation for formal Family Court petitions.",
+                    description="If mediation does not resolve the dispute, consult a verified family advocate to file for maintenance, custody, or mutual consent divorce.",
+                    action_type="contact_lawyer",
+                    why_it_matters="Ensures court orders for monthly financial maintenance and child custody rights.",
+                    practical_tip="Choose from the verified matrimonial advocates suggested below.",
                     authority="Principal Judge, Family Court"
                 )
             ]
             rights = [
                 RightOrSchemeItem(
-                    topic="Hindu Marriage Act, 1955 / Special Marriage Act & DV Act 2005",
-                    explanation="Provides legal framework for marital rights, restitution, alimony, child guardianship, and protection against domestic abuse.",
-                    relevance_reason="Governs domestic relations and financial security for spouses and children.",
+                    topic="Hindu Marriage Act / Special Marriage Act & Domestic Violence Act",
+                    explanation="Provides statutory entitlement to maintenance (food, shelter, medical), residence orders, and child guardianship.",
+                    relevance_reason="Ensures financial independence and legal security for spouses and children.",
                     authority="Family Courts & High Court",
-                    action_recommended="File required petition before Family Court with supporting asset declarations.",
+                    action_recommended="File application for interim maintenance to secure immediate monthly financial support.",
                     source_url="https://legislative.gov.in"
                 )
             ]
             draft_type = "grievance"
 
         elif cat_key == "rti":
-            immediate_action = "Identify the exact Public Authority and Public Information Officer (PIO) holding the records."
+            urgency_level = "standard"
+            urgency_reason = "RTI applications have a mandatory statutory timeline of 30 days."
+            reassurance = "Every Indian citizen has the fundamental right to inspect government records, tenders, and fund spending under the RTI Act 2005. Public officers are legally required to reply within 30 days."
+            immediate_action = "Identify the exact department (e.g. Municipal Corporation, PWD, Transport) holding the records."
             steps = [
                 ActionStep(
                     step_number=1,
-                    title="Frame Precise, Specific RTI Questions",
-                    description="Draft unambiguous questions asking for certified copies of government orders, file notes, tender sanctions, or progress reports.",
-                    why_it_matters="Specific questions prevent PIOs from claiming ambiguity or withholding records.",
-                    required_documents=["RTI Application Draft", "Proof of Identity", "Rs. 10 Fee Payment Receipt"]
+                    title="Draft 3 to 5 Specific, Clear Questions",
+                    simple_summary="Write down concise questions asking for existing government records.",
+                    description="Ask for certified copies of sanction orders, tender allocations, progress reports, or inspection notes.",
+                    action_type="gather_documents",
+                    why_it_matters="Specific questions leave no room for government officers to delay or reject your request.",
+                    practical_tip="Ask for copies of official records rather than asking 'why' or seeking opinions.",
+                    required_documents=["RTI Application Draft", "Identity Proof", "₹10 Application Fee (IPO / Online)"]
                 ),
                 ActionStep(
                     step_number=2,
-                    title="Submit Application via RTI Online or Registered Post",
-                    description="Lodge application on rtionline.gov.in for Central ministries or send via speed post with Rs. 10 postal order to the State PIO.",
-                    why_it_matters="Mandates a statutory response within 30 days under Section 7(1) of the RTI Act.",
+                    title="Submit Application on rtionline.gov.in or via Speed Post with ₹10 Fee",
+                    simple_summary="File on the central/state portal or post to the Public Information Officer (PIO).",
+                    description="Submit online or mail your signed application with a ₹10 Postal Order to the Public Information Officer (PIO) of the department.",
+                    action_type="online_portal",
+                    why_it_matters="Starts the 30-day legal clock for the government to hand over records.",
+                    practical_tip="If sending by post, use Speed Post and note down the tracking number.",
                     authority="Public Information Officer (PIO)",
-                    submission_method="Online Portal (rtionline.gov.in) / Speed Post"
+                    submission_method="RTI Online Portal (rtionline.gov.in) / Speed Post"
                 ),
                 ActionStep(
                     step_number=3,
                     title="File First Appeal if No Response Within 30 Days",
-                    description="If the PIO fails to reply or provides misleading information, submit First Appeal to the First Appellate Authority (FAA) within 30 days.",
-                    why_it_matters="First Appellate Authority has statutory power to direct immediate disclosure without fee.",
+                    simple_summary="Escalate to the senior First Appellate Authority if the PIO delays.",
+                    description="If the PIO does not reply in 30 days, file a First Appeal. The senior officer can penalize the PIO and order free copies.",
+                    action_type="send_notice",
+                    why_it_matters="Mandatory escalation before approaching the Information Commission (CIC/SIC).",
+                    practical_tip="First Appeal is completely free of cost.",
                     authority="First Appellate Authority (FAA)"
                 )
             ]
             rights = [
                 RightOrSchemeItem(
                     topic="Right to Information (RTI) Act, 2005",
-                    explanation="Empowers every Indian citizen to inspect government works, obtain certified copies of records, and hold public authorities accountable.",
-                    relevance_reason="Applies to all central, state, and municipal government departments.",
+                    explanation="Gives every Indian citizen the statutory power to demand public accountability and inspect government records.",
+                    relevance_reason="Empowers citizens to uncover facts regarding public spending and delays.",
                     authority="Central Information Commission (CIC) & State Information Commissions",
                     action_recommended="Submit RTI application online or via registered speed post.",
                     source_url="https://rtionline.gov.in"
@@ -276,45 +334,56 @@ class FallbackProvider(AIProvider):
             draft_type = "rti"
 
         else: # consumer default
-            immediate_action = "Preserve invoice, unboxing videos/photos, payment transaction IDs, and communication history with seller."
+            urgency_level = "standard"
+            urgency_reason = "Consumer grievances can be resolved through pre-litigation helplines or Consumer Commission."
+            reassurance = "Under the Consumer Protection Act 2019, companies are legally accountable for defective items, false promises, or refused refunds. You are entitled to full refund, replacement, and compensation."
+            immediate_action = "Save your purchase invoice, unboxing videos, photos of defect, and seller rejection emails."
             steps = [
                 ActionStep(
                     step_number=1,
-                    title="Compile Proof of Purchase & Written Communication",
-                    description="Organize tax invoice, delivery receipts, photos of defect, and seller rejection emails into a single PDF.",
-                    why_it_matters="Proof of purchase and timely notice of defect are essential to establish liability.",
-                    required_documents=["Tax Invoice", "Photos / Videos of Defect", "Seller Communication Log"]
+                    title="Gather Proof of Purchase & Defect Photos",
+                    simple_summary="Keep your order invoice, unboxing photo/video, and chat history together.",
+                    description="Organize your invoice PDF, delivery receipt, and screenshots of seller refusal.",
+                    action_type="gather_documents",
+                    why_it_matters="Clear purchase and defect evidence makes winning consumer claims fast and straightforward.",
+                    practical_tip="Combine all screenshots and invoice into a single easy-to-share PDF.",
+                    required_documents=["Order Tax Invoice", "Photos / Videos of Defect", "Customer Care Chat Log"]
                 ),
                 ActionStep(
                     step_number=2,
-                    title="Register Grievance on National Consumer Helpline (NCH)",
-                    description="NCH provides a government-operated pre-litigation grievance redress mechanism that can facilitate resolution with the concerned company.",
-                    why_it_matters="Pre-litigation dispute resolution with over 80% resolution rate for registered partner companies.",
+                    title="Register a Free Complaint on National Consumer Helpline (Call 1915)",
+                    simple_summary="Call 1915 or register on consumerhelpline.gov.in for quick company resolution.",
+                    description="NCH is a government service connecting directly with 1000+ top companies (Amazon, Flipkart, Samsung, airlines, etc.). Over 80% grievances are resolved without going to court.",
+                    action_type="call_helpline",
+                    why_it_matters="Free, quick pre-litigation resolution backed by the Department of Consumer Affairs.",
+                    practical_tip="You can also register your complaint via WhatsApp on 8800001915.",
                     authority="National Consumer Helpline (NCH), Dept of Consumer Affairs",
-                    submission_method="Online Portal (consumerhelpline.gov.in) / Call 1915"
+                    submission_method="Online Portal (consumerhelpline.gov.in) / Call 1915 / WhatsApp 8800001915"
                 ),
                 ActionStep(
                     step_number=3,
-                    title="File Formal Complaint on e-Daakhil with Consumer Commission",
-                    description="If grievance remains unresolved, file an e-complaint on e-Daakhil before the Consumer Commission having appropriate territorial and pecuniary jurisdiction.",
-                    why_it_matters="Enables judicial orders for complete refund, replacement, and compensation for harassment.",
-                    authority="Consumer Commission having appropriate jurisdiction",
+                    title="File an Online Claim on e-Daakhil or Consult a Consumer Lawyer",
+                    simple_summary="If the company refuses, file an e-complaint in Consumer Court.",
+                    description="File on e-daakhil.nic.in with the Consumer Commission. You can seek full product refund plus compensation for mental harassment.",
+                    action_type="contact_lawyer",
+                    why_it_matters="Consumer Commissions have judicial power to order refunds and heavy financial penalties on sellers.",
+                    practical_tip="Consult one of the 5 consumer advocates suggested in your area below.",
+                    authority="Consumer Disputes Redressal Commission (District / State)",
                     submission_method="e-Daakhil Portal (e-daakhil.nic.in)"
                 )
             ]
             rights = [
                 RightOrSchemeItem(
-                    topic="Consumer Protection Act, 2019 — Right to Redressal & Product Liability",
-                    explanation="The Consumer Protection Act, 2019 provides consumers with rights and potential remedies, which may include repair, replacement, refund, or compensation depending on the facts and applicable law.",
-                    relevance_reason="Directly applies to consumer purchases and service deficiency in India.",
-                    authority="Consumer Disputes Redressal Commission & NCH",
-                    action_recommended="Register grievance on consumerhelpline.gov.in or file via e-daakhil.nic.in",
+                    topic="Consumer Protection Act, 2019 — Right to Redressal & Refund",
+                    explanation="Gives consumers the statutory right to seek replacement, complete refund, and damages for defective products and deficiency in service.",
+                    relevance_reason="Directly binds all e-commerce sellers and manufacturers in India.",
+                    authority="Consumer Commission & National Consumer Helpline",
+                    action_recommended="Lodge complaint on consumerhelpline.gov.in and escalate to e-Daakhil if unresolved.",
                     source_url="https://consumerhelpline.gov.in"
                 )
             ]
             draft_type = "consumer_complaint"
 
-        # Fetch 5 real verified Indian lawyers for this category and location
         suggested_lawyers = LawyerService.get_suggested_lawyers(
             category=cat_key,
             location=request.location,
@@ -330,14 +399,20 @@ class FallbackProvider(AIProvider):
             predicted_category_name=pred["category_name"],
             category_confidence="high",
             category_reasoning=pred["reasoning"],
+            reassurance_message=reassurance,
+            urgency_level=urgency_level,
+            urgency_reason=urgency_reason,
             applicable_rights_or_schemes=rights,
             action_plan=ActionPlan(
                 immediate_action=immediate_action,
+                reassurance_message=reassurance,
+                urgency_level=urgency_level,
+                urgency_reason=urgency_reason,
                 ordered_steps=steps,
                 required_documents=[doc for s in steps for doc in s.required_documents],
                 target_authority="Appropriate Statutory Authority / Court of Jurisdiction",
-                expected_timeline="15 to 45 days depending on response and court scheduling",
-                warnings=["Maintain copies of all original receipts and notices.", "Do not sign blank agreements or informal waivers."]
+                expected_timeline="15 to 45 days depending on department turnaround",
+                warnings=["Maintain copies of all original receipts and notices.", "Do not sign blank papers or verbal agreements."]
             ),
             recommended_draft_type=draft_type,
             sources=[

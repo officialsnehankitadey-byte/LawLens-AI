@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { SituationAnalysisResponse, DocumentAnalysisResponse, SuggestedLawyer } from "@/lib/types";
+import { SituationAnalysisResponse, DocumentAnalysisResponse, SuggestedLawyer, ActionStep } from "@/lib/types";
 import { getSuggestedLawyers } from "@/lib/api";
 import {
   CheckCircle2, AlertTriangle, FileText, ArrowRight, ShieldCheck,
   Clock, Calendar, ExternalLink, ChevronLeft, Loader2, Scale,
-  MapPin, Phone, Mail, Award, Sparkles, Building2, UserCheck, Star
+  MapPin, Phone, Mail, Award, Sparkles, Building2, UserCheck, Star,
+  ShieldAlert, Lightbulb, HeartHandshake, AlertCircle, HelpCircle, Send
 } from "lucide-react";
 
 // ─── Utility components ──────────────────────────────────────────────────────
@@ -20,13 +21,63 @@ function SectionHeading({ icon: Icon, label, iconClass = "text-brand" }: {
   return (
     <div className="flex items-center gap-2.5 mb-5">
       <Icon className={`h-4.5 w-4.5 ${iconClass} shrink-0`} style={{ height: "1.125rem", width: "1.125rem" }} />
-      <h2 className="text-base font-semibold text-text-primary tracking-tight">{label}</h2>
+      <h2 className="text-base font-bold text-text-primary tracking-tight">{label}</h2>
     </div>
   );
 }
 
 function Divider() {
   return <div className="border-t border-surface-border" />;
+}
+
+// ─── Action Type Icon & Badge Helper ──────────────────────────────────────────
+
+function getActionTypeDetails(type?: string) {
+  switch (type) {
+    case "call_helpline":
+      return {
+        icon: Phone,
+        badgeText: "Helpline Action",
+        badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+        color: "text-emerald-500",
+      };
+    case "go_to_police":
+      return {
+        icon: ShieldAlert,
+        badgeText: "Police Station Step",
+        badgeClass: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+        color: "text-rose-500",
+      };
+    case "contact_lawyer":
+      return {
+        icon: Scale,
+        badgeText: "Consult Lawyer",
+        badgeClass: "bg-brand/10 text-brand border-brand/20",
+        color: "text-brand",
+      };
+    case "online_portal":
+      return {
+        icon: ExternalLink,
+        badgeText: "Online Portal Filing",
+        badgeClass: "bg-sky-500/10 text-sky-500 border-sky-500/20",
+        color: "text-sky-500",
+      };
+    case "send_notice":
+      return {
+        icon: Send,
+        badgeText: "Send Written Notice",
+        badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+        color: "text-amber-500",
+      };
+    case "gather_documents":
+    default:
+      return {
+        icon: FileText,
+        badgeText: "Document Collection",
+        badgeClass: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+        color: "text-indigo-500",
+      };
+  }
 }
 
 // ─── Top 5 Verified Real Lawyers Component ───────────────────────────────────
@@ -67,14 +118,14 @@ function SuggestedLawyersSection({
           <div className="flex items-center gap-2 mb-1">
             <Scale className="h-4.5 w-4.5 text-brand" />
             <h2 className="text-base font-bold text-text-primary tracking-tight">
-              Top 5 Verified Real Advocates in India
+              Recommended Top 5 Real Advocates in India
             </h2>
             <span className="badge-brand text-[10px] uppercase font-bold tracking-wider">
-              Real-Time Verified
+              Real Practicing Bar Counsels
             </span>
           </div>
           <p className="text-xs text-text-secondary">
-            Practicing advocates and Senior Counsels enrolled with State Bar Councils specializing in this legal domain.
+            Verified advocates and Senior Counsels enrolled with State Bar Councils ready to represent your matter.
           </p>
         </div>
 
@@ -105,7 +156,7 @@ function SuggestedLawyersSection({
 
       {/* Quick city tags */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[11px] text-text-muted mr-1">Switch Area:</span>
+        <span className="text-[11px] text-text-muted mr-1">Switch City:</span>
         {cities.map((city) => (
           <button
             key={city}
@@ -422,6 +473,9 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
   const router = useRouter();
   const categoryDisplayName = data.predicted_category_name || (data.category ? data.category.replace("_", " ").toUpperCase() : "Civic / Legal");
 
+  const isHighUrgency = data.urgency_level === "high_urgency";
+  const isModerate = data.urgency_level === "moderate";
+
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10 sm:py-14 space-y-10 animate-fade-in">
 
@@ -434,13 +488,56 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
         Back
       </button>
 
-      {/* AI Category Prediction Banner */}
+      {/* ─── 1. EMOTIONAL REASSURANCE & PEACE OF MIND BANNER ────────────────── */}
+      <div className="p-6 rounded-xl bg-gradient-to-r from-surface to-surface-raised border border-surface-border shadow-md space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 text-xs font-bold uppercase tracking-wider">
+              <HeartHandshake className="h-3.5 w-3.5" />
+              Citizen Peace of Mind &amp; Protection
+            </span>
+          </div>
+
+          {/* Urgency Badge */}
+          {isHighUrgency ? (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs font-bold animate-pulse">
+              <AlertCircle className="h-3.5 w-3.5" />
+              High Urgency (Act Within 24-48 Hours)
+            </span>
+          ) : isModerate ? (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-xs font-bold">
+              <Clock className="h-3.5 w-3.5" />
+              Moderate Priority (7-14 Days)
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-500 text-xs font-bold">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Standard Process
+            </span>
+          )}
+        </div>
+
+        {/* Reassurance Message */}
+        <div className="space-y-2">
+          <p className="text-base sm:text-lg font-medium text-text-primary leading-relaxed">
+            {data.reassurance_message || "You have clear rights under Indian law. Do not panic — follow the simple practical steps below to protect yourself."}
+          </p>
+          {data.urgency_reason && (
+            <p className="text-xs text-text-secondary leading-relaxed bg-surface-raised/80 p-2.5 rounded border border-surface-border/60">
+              <strong className="text-text-primary">Why this matters right now: </strong>
+              {data.urgency_reason}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ─── 2. AI CATEGORY PREDICTION BANNER ──────────────────────────────── */}
       <div className="p-5 rounded-xl bg-surface border border-surface-border shadow-sm space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="inline-flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand/10 border border-brand/25 text-brand text-xs font-bold uppercase tracking-wider">
               <Sparkles className="h-3.5 w-3.5" />
-              AI Predicted Category
+              AI Predicted Domain
             </span>
             <span className="badge-info text-xs font-semibold">
               {data.category_confidence ? `${data.category_confidence.toUpperCase()} CONFIDENCE` : "PREDICTED"}
@@ -462,8 +559,8 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
         </div>
 
         {data.category_reasoning && (
-          <div className="p-3.5 rounded-lg bg-surface-raised border border-surface-border text-xs text-text-secondary leading-relaxed">
-            <strong className="text-text-primary">Classification Reason: </strong>
+          <div className="p-3 rounded-lg bg-surface-raised border border-surface-border text-xs text-text-secondary leading-relaxed">
+            <strong className="text-text-primary">Why AI chose this category: </strong>
             {data.category_reasoning}
           </div>
         )}
@@ -475,56 +572,130 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
 
       <Divider />
 
-      {/* Step-by-Step Action Plan & Legal Solutions */}
-      <div>
-        <SectionHeading icon={CheckCircle2} label="Step-by-Step Legal Solutions &amp; Action Plan" iconClass="text-success-text" />
+      {/* ─── 3. SIMPLIFIED STEP-BY-STEP HUMAN-READABLE ACTION PLAN ─────────── */}
+      <div className="space-y-6">
+        <div>
+          <SectionHeading icon={CheckCircle2} label="Step-by-Step Practical Solutions &amp; Action Plan" iconClass="text-success-text" />
+          <p className="text-xs text-text-secondary -mt-3 mb-4">
+            Follow this clear, plain-language roadmap. Each step tells you exactly what to do, who to approach, and how to protect yourself.
+          </p>
+        </div>
 
-        {/* Immediate action */}
+        {/* Immediate Priority Action */}
         {data.action_plan?.immediate_action && (
-          <div className="mb-5 p-4 rounded-lg bg-success-muted border border-success-border">
-            <p className="text-sm text-success-text leading-relaxed">
-              <span className="font-bold">Immediate Priority Step: </span>
+          <div className="p-5 rounded-xl bg-success-muted border border-success-border space-y-1.5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-success-text shrink-0" />
+              <h3 className="text-xs font-bold text-success-text uppercase tracking-wider">
+                Immediate First Step (Do This First)
+              </h3>
+            </div>
+            <p className="text-sm sm:text-base font-semibold text-success-text leading-relaxed">
               {data.action_plan.immediate_action}
             </p>
           </div>
         )}
 
-        {/* Ordered steps */}
-        <div className="space-y-3.5">
-          {data.action_plan?.ordered_steps?.map((step) => (
-            <div key={step.step_number} className="flex items-start gap-4 p-5 rounded-lg bg-surface border border-surface-border shadow-sm">
-              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-brand/10 border border-brand/20 text-brand font-bold text-xs shrink-0 mt-0.5">
-                {step.step_number}
+        {/* Action Steps Cards */}
+        <div className="space-y-4">
+          {data.action_plan?.ordered_steps?.map((step: ActionStep) => {
+            const actionMeta = getActionTypeDetails(step.action_type);
+            const ActionIcon = actionMeta.icon;
+
+            return (
+              <div
+                key={step.step_number}
+                className="p-5 sm:p-6 rounded-xl bg-surface border border-surface-border shadow-sm hover:border-brand/30 transition-all space-y-4"
+              >
+                {/* Step Top Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-brand/10 border border-brand/20 text-brand font-bold text-sm shrink-0">
+                      {step.step_number}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-text-primary text-base">
+                        {step.title}
+                      </h3>
+                      {step.simple_summary && (
+                        <p className="text-xs text-brand font-medium">
+                          👉 {step.simple_summary}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Type Badge */}
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${actionMeta.badgeClass} self-start sm:self-auto shrink-0`}>
+                    <ActionIcon className="h-3.5 w-3.5" />
+                    {actionMeta.badgeText}
+                  </span>
+                </div>
+
+                {/* Plain-language explanation */}
+                <div className="text-sm text-text-secondary leading-relaxed pl-0 sm:pl-11 space-y-3">
+                  <p>{step.description}</p>
+
+                  {/* Why it matters */}
+                  {step.why_it_matters && (
+                    <p className="text-xs text-text-muted leading-relaxed">
+                      <strong className="text-text-secondary">Why this protects you: </strong>
+                      {step.why_it_matters}
+                    </p>
+                  )}
+
+                  {/* Practical Insider Tip */}
+                  {step.practical_tip && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/8 border border-amber-500/20 text-text-secondary text-xs">
+                      <Lightbulb className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-amber-500 font-bold">Pro Tip for Citizens: </strong>
+                        <span>{step.practical_tip}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Authority / Submission method */}
+                  {step.authority && (
+                    <div className="flex items-center gap-2 text-xs text-text-muted pt-1">
+                      <Building2 className="h-3.5 w-3.5 text-brand shrink-0" />
+                      <span>
+                        <strong className="text-text-secondary">Approaching Authority / Forum: </strong>
+                        <span className="text-brand font-medium">{step.authority}</span>
+                        {step.submission_method ? ` via ${step.submission_method}` : ""}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Documents needed for this specific step */}
+                  {step.required_documents && step.required_documents.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
+                      <span className="text-text-muted font-medium">Keep Ready:</span>
+                      {step.required_documents.map((doc, dIdx) => (
+                        <span key={dIdx} className="px-2 py-0.5 rounded bg-surface-raised border border-surface-border text-text-secondary text-[11px]">
+                          {doc}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2 min-w-0 flex-1">
-                <h3 className="font-bold text-text-primary text-sm">{step.title}</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">{step.description}</p>
-                {step.why_it_matters && (
-                  <p className="text-xs text-text-muted">
-                    <span className="font-semibold text-text-secondary">Legal Significance: </span>
-                    {step.why_it_matters}
-                  </p>
-                )}
-                {step.authority && (
-                  <p className="text-xs text-brand font-medium">
-                    <span>Approach Authority: </span>
-                    {step.authority} {step.submission_method ? `(${step.submission_method})` : ""}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       {/* Required Documents Checklist */}
       {data.action_plan?.required_documents && data.action_plan.required_documents.length > 0 && (
-        <div className="p-5 rounded-lg bg-surface border border-surface-border space-y-3">
+        <div className="p-5 rounded-lg bg-surface border border-surface-border space-y-3 shadow-sm">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="h-4 w-4 text-brand" />
-            <h3 className="text-sm font-bold text-text-primary">Required Evidence &amp; Documents Checklist</h3>
+            <h3 className="text-sm font-bold text-text-primary">Master Evidence &amp; Documents Checklist</h3>
           </div>
-          <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
+          <p className="text-xs text-text-muted">
+            Have photocopies and clear digital PDF copies of these documents ready before proceeding:
+          </p>
+          <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5 pt-1">
             {data.action_plan.required_documents.map((doc, idx) => (
               <li key={idx} className="flex items-center gap-2.5 text-sm text-text-secondary">
                 <CheckCircle2 className="h-3.5 w-3.5 text-brand shrink-0" />
@@ -535,7 +706,7 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
         </div>
       )}
 
-      {/* 5 Real Lawyers Component */}
+      {/* ─── 4. 5 REAL LAWYERS COMPONENT ──────────────────────────────────── */}
       <Divider />
       <SuggestedLawyersSection
         initialLawyers={data.suggested_lawyers}
@@ -544,10 +715,10 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
 
       <Divider />
 
-      {/* Applicable Rights / Statutory Provisions */}
+      {/* ─── 5. APPLICABLE LEGAL RIGHTS IN SIMPLE TERMS ────────────────────── */}
       {data.applicable_rights_or_schemes && data.applicable_rights_or_schemes.length > 0 && (
         <div>
-          <SectionHeading icon={ShieldCheck} label="Applicable Statutory Provisions &amp; Legal Framework" />
+          <SectionHeading icon={ShieldCheck} label="Your Legal Protections &amp; Statutory Framework" />
           <div className="space-y-3">
             {data.applicable_rights_or_schemes.map((item, idx) => (
               <div key={idx} className="p-5 rounded-lg bg-surface border border-surface-border space-y-3 shadow-sm">
@@ -561,47 +732,17 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
                       className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
                     >
                       <ExternalLink className="h-3 w-3" />
-                      Official Statute
+                      Official Portal
                     </a>
                   )}
                 </div>
                 <p className="text-sm text-text-secondary leading-relaxed">{item.explanation}</p>
                 <div className="accent-border-left">
                   <p className="text-xs text-text-muted leading-relaxed">
-                    <span className="text-text-secondary font-medium">Why relevant: </span>
+                    <span className="text-text-secondary font-medium">How it helps you: </span>
                     {item.relevance_reason}
                   </p>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Verified Sources */}
-      {data.sources && data.sources.length > 0 && (
-        <div>
-          <SectionHeading icon={ExternalLink} label="Verified Legal Citations &amp; Portals" iconClass="text-info-text" />
-          <div className="divide-y divide-surface-border rounded-lg border border-surface-border bg-surface overflow-hidden">
-            {data.sources.map((src, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-4 px-4 py-3.5">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">
-                    {src.source_name} — {src.title}
-                  </p>
-                  <p className="text-xs text-text-muted font-mono mt-0.5 truncate">{src.url}</p>
-                </div>
-                {src.url && (
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Visit Portal
-                  </a>
-                )}
               </div>
             ))}
           </div>

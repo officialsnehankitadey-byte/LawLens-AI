@@ -63,14 +63,20 @@ class RightOrSchemeItem(BaseModel):
 class ActionStep(BaseModel):
     step_number: int
     title: str
+    simple_summary: Optional[str] = None
     description: str
+    action_type: Optional[str] = Field("general", description="call_helpline, go_to_police, contact_lawyer, online_portal, gather_documents, send_notice")
     why_it_matters: str
+    practical_tip: Optional[str] = None
     required_documents: List[str] = []
     authority: Optional[str] = None
     submission_method: Optional[str] = None
 
 class ActionPlan(BaseModel):
     immediate_action: str
+    reassurance_message: Optional[str] = None
+    urgency_level: Optional[str] = Field("moderate", description="high_urgency, moderate, standard")
+    urgency_reason: Optional[str] = None
     ordered_steps: List[ActionStep]
     required_documents: List[str]
     target_authority: Optional[str] = None
@@ -90,7 +96,7 @@ class AuthorityRouting(BaseModel):
     portal_url: Optional[str] = None
     notes: Optional[str] = None
 
-# Updated SituationAnalysisResponse with evidence status and lawyer suggestions
+# Updated SituationAnalysisResponse with reassurance and simplified guidance
 class SituationAnalysisResponse(BaseModel):
     id: str
     situation_summary: str
@@ -100,6 +106,9 @@ class SituationAnalysisResponse(BaseModel):
     predicted_category_name: Optional[str] = None
     category_confidence: Optional[str] = "high"
     category_reasoning: Optional[str] = None
+    reassurance_message: Optional[str] = None
+    urgency_level: Optional[str] = "moderate"
+    urgency_reason: Optional[str] = None
     applicable_rights_or_schemes: List[RightOrSchemeItem]
     eligibility_assessment: Optional[str] = None
     action_plan: ActionPlan
