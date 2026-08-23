@@ -8,7 +8,7 @@ import {
   CheckCircle2, AlertTriangle, FileText, ArrowRight, ShieldCheck,
   Clock, Calendar, ExternalLink, ChevronLeft, Loader2, Scale,
   MapPin, Phone, Mail, Award, Sparkles, Building2, UserCheck, Star,
-  ShieldAlert, Lightbulb, HeartHandshake, AlertCircle, HelpCircle, Send
+  ShieldAlert, Lightbulb, HeartHandshake, AlertCircle, Send
 } from "lucide-react";
 
 // ─── Utility components ──────────────────────────────────────────────────────

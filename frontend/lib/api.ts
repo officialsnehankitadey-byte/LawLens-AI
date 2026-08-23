@@ -55,4 +55,16 @@ export const generateDraft = async (data: DraftRequest): Promise<DraftResponse> 
   return res.data;
 };
 
+export const parseApiError = (err: any): string => {
+  if (err?.response?.data?.detail) {
+    if (typeof err.response.data.detail === "string") {
+      return err.response.data.detail;
+    }
+    if (Array.isArray(err.response.data.detail)) {
+      return err.response.data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(", ");
+    }
+  }
+  return err?.message || "An unexpected error occurred. Please try again.";
+};
+
 export default api;

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { analyzeProblem } from "@/lib/api";
-import { Search, Loader2, AlertCircle, ChevronRight, Sparkles, MapPin, Scale, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Search, Loader2, AlertCircle, ChevronRight, Sparkles, MapPin, Scale, ShieldCheck } from "lucide-react";
 
 const DEMO_SCENARIOS = [
   {
