@@ -33,7 +33,8 @@ async def analyze_problem(request: ProblemRequest):
         raise HTTPException(status_code=400, detail="Problem description cannot be empty.")
     provider = build_ai_provider()
     result = await provider.analyze_problem(request)
-    return attach_authority_routing(result, request.category, request.problem, request.location)
+    effective_category = result.predicted_category or result.category or request.category or "consumer"
+    return attach_authority_routing(result, effective_category, request.problem, request.location)
 
 
 @router.get("/authority/route", response_model=AuthorityRouting)

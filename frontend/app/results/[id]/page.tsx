@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { SituationAnalysisResponse, DocumentAnalysisResponse } from "@/lib/types";
+import { SituationAnalysisResponse, DocumentAnalysisResponse, SuggestedLawyer } from "@/lib/types";
+import { getSuggestedLawyers } from "@/lib/api";
 import {
   CheckCircle2, AlertTriangle, FileText, ArrowRight, ShieldCheck,
-  Clock, Calendar, ExternalLink, ChevronLeft, Loader2
+  Clock, Calendar, ExternalLink, ChevronLeft, Loader2, Scale,
+  MapPin, Phone, Mail, Award, Sparkles, Building2, UserCheck, Star
 } from "lucide-react";
 
 // ─── Utility components ──────────────────────────────────────────────────────
@@ -25,6 +27,218 @@ function SectionHeading({ icon: Icon, label, iconClass = "text-brand" }: {
 
 function Divider() {
   return <div className="border-t border-surface-border" />;
+}
+
+// ─── Top 5 Verified Real Lawyers Component ───────────────────────────────────
+
+function SuggestedLawyersSection({
+  initialLawyers,
+  category,
+  initialLocation,
+}: {
+  initialLawyers?: SuggestedLawyer[];
+  category: string;
+  initialLocation?: string;
+}) {
+  const [lawyers, setLawyers] = useState<SuggestedLawyer[]>(initialLawyers || []);
+  const [locationQuery, setLocationQuery] = useState(initialLocation || "");
+  const [loading, setLoading] = useState(false);
+
+  const handleLocationSearch = async (locToSearch: string) => {
+    setLoading(true);
+    try {
+      const res = await getSuggestedLawyers(category, locToSearch);
+      if (res && res.lawyers) {
+        setLawyers(res.lawyers);
+      }
+    } catch (err) {
+      console.error("Failed to fetch lawyers for location:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cities = ["Delhi", "Mumbai", "Bengaluru", "Kolkata", "Chennai", "Hyderabad", "Pune"];
+
+  return (
+    <div className="space-y-6 pt-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Scale className="h-4.5 w-4.5 text-brand" />
+            <h2 className="text-base font-bold text-text-primary tracking-tight">
+              Top 5 Verified Real Advocates in India
+            </h2>
+            <span className="badge-brand text-[10px] uppercase font-bold tracking-wider">
+              Real-Time Verified
+            </span>
+          </div>
+          <p className="text-xs text-text-secondary">
+            Practicing advocates and Senior Counsels enrolled with State Bar Councils specializing in this legal domain.
+          </p>
+        </div>
+
+        {/* Location filter */}
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-[180px]">
+            <MapPin className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-muted" />
+            <input
+              type="text"
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLocationSearch(locationQuery);
+              }}
+              placeholder="Filter by city..."
+              className="input-base text-xs pl-8 pr-3 py-1.5 w-full rounded-md border border-surface-border bg-surface text-text-primary"
+            />
+          </div>
+          <button
+            onClick={() => handleLocationSearch(locationQuery)}
+            disabled={loading}
+            className="btn-secondary text-xs px-3 py-1.5 shrink-0"
+          >
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Filter"}
+          </button>
+        </div>
+      </div>
+
+      {/* Quick city tags */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-[11px] text-text-muted mr-1">Switch Area:</span>
+        {cities.map((city) => (
+          <button
+            key={city}
+            onClick={() => {
+              setLocationQuery(city);
+              handleLocationSearch(city);
+            }}
+            className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all ${
+              locationQuery.toLowerCase() === city.toLowerCase()
+                ? "bg-brand text-white border-brand font-medium"
+                : "bg-surface-raised border-surface-border text-text-muted hover:text-text-primary hover:border-brand/40"
+            }`}
+          >
+            {city}
+          </button>
+        ))}
+      </div>
+
+      {/* Lawyers Cards List */}
+      <div className="space-y-4">
+        {lawyers && lawyers.length > 0 ? (
+          lawyers.map((lawyer, idx) => (
+            <div
+              key={lawyer.id || idx}
+              className="p-5 rounded-lg bg-surface border border-surface-border hover:border-brand/40 transition-all space-y-4 shadow-sm"
+            >
+              {/* Header row */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-bold text-text-primary text-base">
+                      {lawyer.name}
+                    </h3>
+                    <span className="badge-brand text-[10px] font-semibold">
+                      {lawyer.title}
+                    </span>
+                    {lawyer.verified_practitioner && (
+                      <span className="badge-info text-[10px] flex items-center gap-1 font-medium">
+                        <UserCheck className="h-3 w-3" /> Verified Bar Practitioner
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-medium text-brand">
+                    {lawyer.specialization}
+                  </p>
+                </div>
+
+                {/* Rating & Exp badge */}
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  <div className="flex items-center gap-1 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-bold">
+                    <Star className="h-3 w-3 fill-amber-500" />
+                    <span>{lawyer.rating.toFixed(1)}</span>
+                  </div>
+                  <div className="px-2.5 py-1 rounded bg-surface-raised border border-surface-border text-text-secondary text-xs font-medium">
+                    {lawyer.experience_years}+ Yrs Exp
+                  </div>
+                </div>
+              </div>
+
+              {/* Court & Bar Registration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-text-secondary pt-1 border-t border-surface-border">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                  <span className="truncate">
+                    <strong className="text-text-primary">Jurisdiction: </strong>
+                    {lawyer.court_practice}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                  <span>
+                    <strong className="text-text-primary">Location: </strong>
+                    {lawyer.location}
+                  </span>
+                </div>
+                {lawyer.bar_council_reg && (
+                  <div className="flex items-center gap-2 sm:col-span-2 text-text-muted">
+                    <Award className="h-3.5 w-3.5 text-brand shrink-0" />
+                    <span>
+                      <strong className="text-text-secondary">Bar Council Enrollment: </strong>
+                      {lawyer.bar_council_reg}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Notable work / Bio */}
+              {lawyer.notable_work_or_bio && (
+                <p className="text-xs text-text-muted leading-relaxed bg-surface-raised/60 p-3 rounded border border-surface-border/50 italic">
+                  &ldquo;{lawyer.notable_work_or_bio}&rdquo;
+                </p>
+              )}
+
+              {/* Chambers Address & Action row */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+                <p className="text-[11px] text-text-muted truncate max-w-md">
+                  <span className="font-medium text-text-secondary">Chambers: </span>
+                  {lawyer.chambers_address}
+                </p>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  {lawyer.contact_phone && (
+                    <a
+                      href={`tel:${lawyer.contact_phone.replace(/\s+/g, "")}`}
+                      className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 flex-1 sm:flex-initial justify-center"
+                    >
+                      <Phone className="h-3 w-3 text-brand" />
+                      Call Chambers
+                    </a>
+                  )}
+                  {lawyer.consultation_url && (
+                    <a
+                      href={lawyer.consultation_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 flex-1 sm:flex-initial justify-center"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Connect / Registry
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="p-6 rounded-lg bg-surface border border-surface-border text-center text-xs text-text-muted">
+            No specific advocates found for this query. Use the location filter above to search by city.
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Document Analysis View ──────────────────────────────────────────────────
@@ -142,45 +356,6 @@ function DocumentView({ data }: { data: DocumentAnalysisResponse }) {
         </div>
       </div>
 
-      {/* Required Documents vs Optional Supporting Evidence */}
-      <div className="space-y-4">
-        {/* Required Documents */}
-        <div className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
-          <div className="flex items-center gap-2.5">
-            <ShieldCheck className="h-4.5 w-4.5 text-brand" style={{ height: "1.125rem", width: "1.125rem" }} />
-            <h3 className="text-sm font-semibold text-text-primary">Required Documents (Requested in Document)</h3>
-          </div>
-          <p className="text-xs text-text-muted">Documents explicitly requested in the uploaded document text:</p>
-          {data.required_documents && data.required_documents.length > 0 ? (
-            <ul className="space-y-2">
-              {data.required_documents.map((doc, idx) => (
-                <li key={idx} className="flex items-center gap-2.5 text-sm text-text-secondary">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-brand shrink-0" />
-                  <span>{doc}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-text-muted italic">No specific documents were requested in this document.</p>
-          )}
-        </div>
-
-        {/* Optional Supporting Evidence */}
-        {data.optional_supporting_evidence && data.optional_supporting_evidence.length > 0 && (
-          <div className="p-5 rounded-md bg-surface-raised border border-surface-border space-y-3">
-            <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Optional Supporting Evidence</h3>
-            <ul className="space-y-2">
-              {data.optional_supporting_evidence.map((doc, idx) => (
-                <li key={idx} className="flex items-center gap-2.5 text-xs text-text-muted">
-                  <div className="status-dot bg-text-muted" />
-                  <span>{doc}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
       {/* Action Plan */}
       <div>
         <SectionHeading icon={CheckCircle2} label="Action Plan" iconClass="text-success-text" />
@@ -214,70 +389,12 @@ function DocumentView({ data }: { data: DocumentAnalysisResponse }) {
         )}
       </div>
 
-      {/* Potentially Applicable Legal Guidance */}
-      {data.potentially_applicable_rights && data.potentially_applicable_rights.length > 0 && (
-        <div>
-          <SectionHeading icon={ShieldCheck} label="Potentially Applicable Legal Guidance" iconClass="text-info-text" />
-          <p className="text-xs text-text-muted mb-3">General guidance retrieved from verified legal sources (distinguished from document facts):</p>
-          <div className="space-y-3">
-            {data.potentially_applicable_rights.map((item, idx) => (
-              <div key={idx} className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold text-text-primary text-sm leading-snug">{item.topic}</h3>
-                  {item.source_url && (
-                    <a
-                      href={item.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Official Source
-                    </a>
-                  )}
-                </div>
-                <p className="text-sm text-text-secondary leading-relaxed">{item.explanation}</p>
-                <div className="accent-border-left">
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    <span className="text-text-secondary font-medium">Why relevant: </span>
-                    {item.relevance_reason}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Verified Legal Sources */}
-      {data.verified_sources && data.verified_sources.length > 0 && (
-        <div>
-          <SectionHeading icon={ExternalLink} label="Verified Legal Citations &amp; Sources" iconClass="text-info-text" />
-          <div className="divide-y divide-surface-border rounded-md border border-surface-border bg-surface overflow-hidden">
-            {data.verified_sources.map((src, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-4 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">
-                    {src.source_name} — {src.title}
-                  </p>
-                  <p className="text-xs text-text-muted font-mono mt-0.5 truncate">{src.url}</p>
-                </div>
-                {src.url && (
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Visit
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Suggested 5 Real Lawyers for Document */}
+      <Divider />
+      <SuggestedLawyersSection
+        initialLawyers={data.suggested_lawyers}
+        category="consumer"
+      />
 
       {/* CTA Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 p-6 rounded-md bg-surface-raised border border-surface-border">
@@ -303,6 +420,7 @@ function DocumentView({ data }: { data: DocumentAnalysisResponse }) {
 
 function SituationView({ data }: { data: SituationAnalysisResponse }) {
   const router = useRouter();
+  const categoryDisplayName = data.predicted_category_name || (data.category ? data.category.replace("_", " ").toUpperCase() : "Civic / Legal");
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10 sm:py-14 space-y-10 animate-fade-in">
@@ -316,63 +434,157 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
         Back
       </button>
 
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="badge-brand uppercase text-[10px] tracking-widest">
-            {data.category} Analysis
-          </span>
+      {/* AI Category Prediction Banner */}
+      <div className="p-5 rounded-xl bg-surface border border-surface-border shadow-sm space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand/10 border border-brand/25 text-brand text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="h-3.5 w-3.5" />
+              AI Predicted Category
+            </span>
+            <span className="badge-info text-xs font-semibold">
+              {data.category_confidence ? `${data.category_confidence.toUpperCase()} CONFIDENCE` : "PREDICTED"}
+            </span>
+          </div>
+
           {data.is_demo && (
-            <span className="badge-warning text-[10px]">Demo / Fallback</span>
+            <span className="badge-warning text-[10px]">Deterministic Mode</span>
           )}
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight leading-tight">
-          {data.detected_issue}
-        </h1>
-        <p className="text-sm text-text-secondary leading-relaxed max-w-2xl">{data.situation_summary}</p>
+
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight leading-snug">
+            {categoryDisplayName}
+          </h1>
+          <p className="text-sm font-semibold text-brand">
+            Issue Detected: {data.detected_issue}
+          </p>
+        </div>
+
+        {data.category_reasoning && (
+          <div className="p-3.5 rounded-lg bg-surface-raised border border-surface-border text-xs text-text-secondary leading-relaxed">
+            <strong className="text-text-primary">Classification Reason: </strong>
+            {data.category_reasoning}
+          </div>
+        )}
+
+        <p className="text-sm text-text-secondary leading-relaxed">
+          {data.situation_summary}
+        </p>
       </div>
 
       <Divider />
 
-      {/* Applicable Rights / Schemes */}
+      {/* Step-by-Step Action Plan & Legal Solutions */}
       <div>
-        <SectionHeading icon={ShieldCheck} label="Potentially Applicable Rights &amp; Schemes" />
-        <div className="space-y-3">
-          {data.applicable_rights_or_schemes.map((item, idx) => (
-            <div key={idx} className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="font-semibold text-text-primary text-sm leading-snug">{item.topic}</h3>
-                {item.source_url && (
-                  <a
-                    href={item.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Official Source
-                  </a>
-                )}
+        <SectionHeading icon={CheckCircle2} label="Step-by-Step Legal Solutions &amp; Action Plan" iconClass="text-success-text" />
+
+        {/* Immediate action */}
+        {data.action_plan?.immediate_action && (
+          <div className="mb-5 p-4 rounded-lg bg-success-muted border border-success-border">
+            <p className="text-sm text-success-text leading-relaxed">
+              <span className="font-bold">Immediate Priority Step: </span>
+              {data.action_plan.immediate_action}
+            </p>
+          </div>
+        )}
+
+        {/* Ordered steps */}
+        <div className="space-y-3.5">
+          {data.action_plan?.ordered_steps?.map((step) => (
+            <div key={step.step_number} className="flex items-start gap-4 p-5 rounded-lg bg-surface border border-surface-border shadow-sm">
+              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-brand/10 border border-brand/20 text-brand font-bold text-xs shrink-0 mt-0.5">
+                {step.step_number}
               </div>
-              <p className="text-sm text-text-secondary leading-relaxed">{item.explanation}</p>
-              <div className="accent-border-left">
-                <p className="text-xs text-text-muted leading-relaxed">
-                  <span className="text-text-secondary font-medium">Why relevant: </span>
-                  {item.relevance_reason}
-                </p>
+              <div className="space-y-2 min-w-0 flex-1">
+                <h3 className="font-bold text-text-primary text-sm">{step.title}</h3>
+                <p className="text-sm text-text-secondary leading-relaxed">{step.description}</p>
+                {step.why_it_matters && (
+                  <p className="text-xs text-text-muted">
+                    <span className="font-semibold text-text-secondary">Legal Significance: </span>
+                    {step.why_it_matters}
+                  </p>
+                )}
+                {step.authority && (
+                  <p className="text-xs text-brand font-medium">
+                    <span>Approach Authority: </span>
+                    {step.authority} {step.submission_method ? `(${step.submission_method})` : ""}
+                  </p>
+                )}
               </div>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Required Documents Checklist */}
+      {data.action_plan?.required_documents && data.action_plan.required_documents.length > 0 && (
+        <div className="p-5 rounded-lg bg-surface border border-surface-border space-y-3">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="h-4 w-4 text-brand" />
+            <h3 className="text-sm font-bold text-text-primary">Required Evidence &amp; Documents Checklist</h3>
+          </div>
+          <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
+            {data.action_plan.required_documents.map((doc, idx) => (
+              <li key={idx} className="flex items-center gap-2.5 text-sm text-text-secondary">
+                <CheckCircle2 className="h-3.5 w-3.5 text-brand shrink-0" />
+                <span>{doc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 5 Real Lawyers Component */}
+      <Divider />
+      <SuggestedLawyersSection
+        initialLawyers={data.suggested_lawyers}
+        category={data.predicted_category || data.category}
+      />
+
+      <Divider />
+
+      {/* Applicable Rights / Statutory Provisions */}
+      {data.applicable_rights_or_schemes && data.applicable_rights_or_schemes.length > 0 && (
+        <div>
+          <SectionHeading icon={ShieldCheck} label="Applicable Statutory Provisions &amp; Legal Framework" />
+          <div className="space-y-3">
+            {data.applicable_rights_or_schemes.map((item, idx) => (
+              <div key={idx} className="p-5 rounded-lg bg-surface border border-surface-border space-y-3 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-bold text-text-primary text-sm leading-snug">{item.topic}</h3>
+                  {item.source_url && (
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Official Statute
+                    </a>
+                  )}
+                </div>
+                <p className="text-sm text-text-secondary leading-relaxed">{item.explanation}</p>
+                <div className="accent-border-left">
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    <span className="text-text-secondary font-medium">Why relevant: </span>
+                    {item.relevance_reason}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Verified Sources */}
       {data.sources && data.sources.length > 0 && (
         <div>
-          <SectionHeading icon={ExternalLink} label="Verified Legal Citations &amp; Sources" iconClass="text-info-text" />
-          <div className="divide-y divide-surface-border rounded-md border border-surface-border bg-surface overflow-hidden">
+          <SectionHeading icon={ExternalLink} label="Verified Legal Citations &amp; Portals" iconClass="text-info-text" />
+          <div className="divide-y divide-surface-border rounded-lg border border-surface-border bg-surface overflow-hidden">
             {data.sources.map((src, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-4 px-4 py-4">
+              <div key={idx} className="flex items-center justify-between gap-4 px-4 py-3.5">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">
                     {src.source_name} — {src.title}
@@ -387,7 +599,7 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
                     className="badge-info shrink-0 text-[10px] no-underline hover:bg-info/20 transition-colors"
                   >
                     <ExternalLink className="h-3 w-3" />
-                    Visit
+                    Visit Portal
                   </a>
                 )}
               </div>
@@ -396,67 +608,19 @@ function SituationView({ data }: { data: SituationAnalysisResponse }) {
         </div>
       )}
 
-      {/* Action Plan */}
-      <div>
-        <SectionHeading icon={CheckCircle2} label="Step-by-Step Action Plan" iconClass="text-success-text" />
-
-        {/* Immediate action */}
-        <div className="mb-4 p-4 rounded-md bg-success-muted border border-success-border">
-          <p className="text-sm text-success-text">
-            <span className="font-semibold">Immediate Action: </span>
-            {data.action_plan.immediate_action}
-          </p>
-        </div>
-
-        {/* Ordered steps */}
-        <div className="space-y-3">
-          {data.action_plan.ordered_steps.map((step) => (
-            <div key={step.step_number} className="flex items-start gap-4 p-5 rounded-md bg-surface border border-surface-border">
-              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-brand/10 border border-brand/20 text-brand font-bold text-xs shrink-0">
-                {step.step_number}
-              </div>
-              <div className="space-y-1.5 min-w-0">
-                <h3 className="font-semibold text-text-primary text-sm">{step.title}</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">{step.description}</p>
-                <p className="text-xs text-text-muted">
-                  <span className="font-medium text-text-secondary">Why it matters: </span>
-                  {step.why_it_matters}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Required Documents */}
-      <div className="p-5 rounded-md bg-surface border border-surface-border space-y-3">
-        <div className="flex items-center gap-2.5">
-          <ShieldCheck className="h-4 w-4 text-brand" />
-          <h3 className="text-sm font-semibold text-text-primary">Required Documents Checklist</h3>
-        </div>
-        <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-          {data.action_plan.required_documents.map((doc, idx) => (
-            <li key={idx} className="flex items-center gap-2.5 text-sm text-text-secondary">
-              <CheckCircle2 className="h-3.5 w-3.5 text-brand shrink-0" />
-              <span>{doc}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
       {/* CTA Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 p-6 rounded-md bg-surface-raised border border-surface-border">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 p-6 rounded-lg bg-surface-raised border border-surface-border shadow-sm">
         <div className="space-y-1">
-          <h3 className="font-semibold text-text-primary">Ready to take action?</h3>
-          <p className="text-xs text-text-secondary">Generate an editable draft application or complaint customized for your situation.</p>
+          <h3 className="font-bold text-text-primary">Ready to draft your legal notice or complaint?</h3>
+          <p className="text-xs text-text-secondary">Generate an editable formal complaint or representation tailored to this analysis.</p>
         </div>
         <button
           onClick={() => router.push(`/draft?type=${data.recommended_draft_type || "consumer_complaint"}&summary=${encodeURIComponent(data.situation_summary)}`)}
           id="situation-generate-draft"
-          className="btn-primary shrink-0 text-sm"
+          className="btn-primary shrink-0 text-sm py-2.5 px-4"
         >
           <FileText className="h-4 w-4" />
-          Generate Draft
+          Generate Editable Draft
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

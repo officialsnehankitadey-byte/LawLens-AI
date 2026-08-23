@@ -1,5 +1,13 @@
 import axios from "axios";
-import { HealthStatus, ProblemRequest, SituationAnalysisResponse, DocumentAnalysisResponse, DraftRequest, DraftResponse } from "./types";
+import {
+  HealthStatus,
+  ProblemRequest,
+  SituationAnalysisResponse,
+  DocumentAnalysisResponse,
+  DraftRequest,
+  DraftResponse,
+  LawyerSearchResponse
+} from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -18,6 +26,15 @@ export const checkHealth = async (): Promise<HealthStatus> => {
 
 export const analyzeProblem = async (data: ProblemRequest): Promise<SituationAnalysisResponse> => {
   const res = await api.post<SituationAnalysisResponse>("/analyze/problem", data);
+  return res.data;
+};
+
+export const getSuggestedLawyers = async (category: string, location?: string): Promise<LawyerSearchResponse> => {
+  const params: Record<string, string> = { category };
+  if (location && location.trim()) {
+    params.location = location.trim();
+  }
+  const res = await api.get<LawyerSearchResponse>("/lawyers/suggest", { params });
   return res.data;
 };
 

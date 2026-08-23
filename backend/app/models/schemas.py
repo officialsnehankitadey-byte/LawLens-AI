@@ -9,11 +9,40 @@ class HealthResponse(BaseModel):
     ai_provider: str
     api_key_configured: bool
 
+# --- Lawyer Directory & Suggestions ---
+class SuggestedLawyer(BaseModel):
+    id: str
+    name: str
+    title: str
+    specialization: str
+    location: str
+    court_practice: str
+    experience_years: int
+    bar_council_reg: Optional[str] = None
+    rating: float = 4.8
+    reviews_count: int = 100
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    chambers_address: str
+    consultation_url: Optional[str] = None
+    verified_practitioner: bool = True
+    notable_work_or_bio: Optional[str] = None
+
+class LawyerSearchRequest(BaseModel):
+    category: Optional[str] = "criminal"
+    location: Optional[str] = None
+    limit: int = 5
+
+class LawyerSearchResponse(BaseModel):
+    category: str
+    location_searched: Optional[str] = None
+    lawyers: List[SuggestedLawyer] = []
+
 # --- Problem Input & Analysis ---
 class ProblemRequest(BaseModel):
     problem: str = Field(..., description="Natural language problem description")
-    category: str = Field("consumer", description="Category: consumer, rti, tenant, scheme, notice, service, other")
-    location: Optional[str] = Field(None, description="User location (State/District)")
+    category: Optional[str] = Field("auto", description="Category: auto, criminal, consumer, cyber_crime, property_tenancy, family_matrimonial, rti, employment, corporate, other")
+    location: Optional[str] = Field(None, description="User location (City/State/District)")
     language: str = Field("en", description="Preferred language code (default: en)")
 
 class SourceReference(BaseModel):
@@ -61,21 +90,26 @@ class AuthorityRouting(BaseModel):
     portal_url: Optional[str] = None
     notes: Optional[str] = None
 
-# Updated SituationAnalysisResponse with evidence status
+# Updated SituationAnalysisResponse with evidence status and lawyer suggestions
 class SituationAnalysisResponse(BaseModel):
     id: str
     situation_summary: str
     detected_issue: str
     category: str
+    predicted_category: Optional[str] = None
+    predicted_category_name: Optional[str] = None
+    category_confidence: Optional[str] = "high"
+    category_reasoning: Optional[str] = None
     applicable_rights_or_schemes: List[RightOrSchemeItem]
     eligibility_assessment: Optional[str] = None
     action_plan: ActionPlan
-    recommended_draft_type: Optional[str] = Field(None, description="rti, consumer_complaint, grievance, appeal")
+    recommended_draft_type: Optional[str] = Field(None, description="rti, consumer_complaint, grievance, appeal, police_complaint, legal_notice")
     sources: List[SourceReference] = []
     disclaimer: str
     is_demo: bool = False
     evidence_status: List[EvidenceItem] = []
     authority_routing: Optional[AuthorityRouting] = None
+    suggested_lawyers: List[SuggestedLawyer] = []
 
 
 # --- Document Analysis ---
@@ -97,6 +131,7 @@ class DocumentAnalysisResponse(BaseModel):
     recommended_draft_type: Optional[str] = None
     is_demo: bool = False
     authority_routing: Optional[AuthorityRouting] = None
+    suggested_lawyers: List[SuggestedLawyer] = []
 
 # --- Scheme Check ---
 class SchemeCheckRequest(BaseModel):

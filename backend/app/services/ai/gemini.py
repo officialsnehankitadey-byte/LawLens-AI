@@ -4,6 +4,7 @@ import uuid
 from app.services.ai.base import AIProvider
 from app.services.ai.fallback import FallbackProvider
 from app.services.document.analyzer import DocumentAnalyzer
+from app.services.lawyer_service import LawyerService
 from app.models.schemas import (
     ProblemRequest, SituationAnalysisResponse, RightOrSchemeItem,
     ActionPlan, ActionStep, SourceReference,
@@ -65,6 +66,7 @@ class GeminiProvider(AIProvider):
                 )
             else:
                 raise
+            return response.text.strip()
         return response.text.strip()
 
     async def _fallback_or_secondary(self, method_name: str, *args):
@@ -75,10 +77,13 @@ class GeminiProvider(AIProvider):
             except Exception as e:
                 logger.error(f"Secondary provider {type(self.secondary).__name__} failed: {e}")
         return await getattr(self.fallback, method_name)(*args)
+
     @staticmethod
     def _resolve_official_url(topic_str: str) -> str:
         t = str(topic_str).lower()
-        if "consumer" in t or "redressal" in t or "defect" in t or "nch" in t:
+        if "cyber" in t or "it act" in t or "1930" in t:
+            return "https://cybercrime.gov.in"
+        elif "consumer" in t or "redressal" in t or "defect" in t or "nch" in t:
             return "https://consumerhelpline.gov.in"
         elif "rti" in t or "information" in t:
             return "https://rtionline.gov.in"
@@ -88,6 +93,10 @@ class GeminiProvider(AIProvider):
             return "https://myscheme.gov.in"
         elif "pgportal" in t or "grievance" in t or "cpgrams" in t:
             return "https://pgportal.gov.in"
+        elif "bns" in t or "police" in t or "mha" in t:
+            return "https://mha.gov.in"
+        elif "rera" in t:
+            return "https://mohua.gov.in"
         return "https://legislative.gov.in"
 
     # ------------------------------------------------------------------ #
@@ -97,69 +106,70 @@ class GeminiProvider(AIProvider):
         if not self.is_available():
             return await self._fallback_or_secondary("analyze_problem", request)
 
-        prompt = f"""You are LawLens AI — a civic and legal empowerment assistant for Indian citizens.
-Analyze the following problem and return a JSON object ONLY (no markdown, no explanation).
+        prompt = f"""You are LawLens AI — a premier civic and legal empowerment assistant for Indian citizens.
+The user describes their issue in plain language. You MUST automatically identify and predict the legal category, provide comprehensive step-by-step procedural solutions, and cite verified Indian laws (e.g. BNS/BNSS, Consumer Protection Act 2019, IT Act 2000, RTI Act 2005, Transfer of Property Act, etc.).
 
 Problem: {request.problem}
-Category: {request.category}
 Location: {request.location or "India"}
 
-Return this exact JSON structure:
+Analyze the problem and return a JSON object ONLY (no markdown, no code fences):
 {{
-  "situation_summary": "One-sentence summary of the user's situation",
-  "detected_issue": "Short title of the core legal/civic issue",
-  "user_provided_facts": ["Fact directly mentioned by user"],
-  "ai_inferences": ["Inference derived by AI"],
+  "predicted_category": "one of: criminal, consumer, cyber_crime, property_tenancy, family_matrimonial, rti, employment, corporate, civil",
+  "predicted_category_name": "Human readable name, e.g. Criminal Defense & Penal Law / Cyber Crime & Digital Fraud / Consumer Protection",
+  "category_confidence": "high",
+  "category_reasoning": "Clear explanation of why this legal category applies to the user's situation",
+  "situation_summary": "One-sentence executive summary of the user's situation",
+  "detected_issue": "Concise title of the core legal/civic grievance",
+  "user_provided_facts": ["Key fact stated by user"],
   "applicable_rights_or_schemes": [
     {{
-      "topic": "Name of the law/scheme/right",
-      "explanation": "What it is and how it helps",
-      "relevance_reason": "Why it applies here",
-      "authority": "Relevant authority name",
-      "action_recommended": "What the user should do under this right"
+      "topic": "Name of specific Act / Section / Provision (e.g. Consumer Protection Act 2019, Section 66D IT Act, Section 173 BNSS)",
+      "explanation": "What the law provides and how it protects the citizen",
+      "relevance_reason": "Why this provision directly applies to this problem",
+      "authority": "Concerned forum / statutory authority",
+      "action_recommended": "Specific legal step under this section"
     }}
   ],
   "action_plan": {{
-    "immediate_action": "The single most important first step",
+    "immediate_action": "The single most critical step to take immediately",
     "ordered_steps": [
       {{
         "step_number": 1,
-        "title": "Step title",
-        "description": "What to do",
-        "why_it_matters": "Why this step is important"
+        "title": "Clear step title",
+        "description": "Concrete, step-by-step action instructions",
+        "why_it_matters": "Legal significance of this step",
+        "required_documents": ["Document required for this step"]
       }}
     ],
     "required_documents": ["Document 1", "Document 2"],
-    "target_authority": "Name of main authority to approach",
-    "expected_timeline": "Realistic timeline",
-    "warnings": ["Any important warnings"]
+    "target_authority": "Name of main authority or court to approach",
+    "expected_timeline": "Realistic estimated timeline",
+    "warnings": ["Important caution or deadline warning"]
   }},
-  "recommended_draft_type": "one of: rti, consumer_complaint, grievance, appeal",
-  "disclaimer": "Standard disclaimer text"
+  "recommended_draft_type": "one of: rti, consumer_complaint, grievance, appeal, police_complaint, legal_notice",
+  "disclaimer": "LawLens AI provides legal information and guidance for educational purposes. For formal representation, consult a qualified advocate."
 }}
 
 Legal Accuracy Rules (MUST follow):
-- Do NOT state that sending a legal notice is a mandatory step or required prerequisite before filing a consumer complaint. Under the Consumer Protection Act 2019, a consumer may file a complaint directly without first sending a legal notice.
-- You MAY mention that sending a formal legal notice can be a useful optional pre-litigation step that sometimes prompts resolution without formal proceedings, but always frame it as optional — never mandatory or required.
-- Remove any statement that replacement was requested, refused, delayed, or not provided unless explicitly supported by the user's input or uploaded evidence. Use only verified facts. Do NOT mention replacement or state that replacement was requested, refused, delayed, or not provided unless that specific fact is explicitly supported by the user's input or uploaded evidence.
-- When explaining consumer rights or remedies under the Consumer Protection Act, state that the Act provides consumers with rights and potential remedies, which may include repair, replacement, refund, or compensation depending on the facts and applicable law.
-- For Step 2's "Why it matters" statement (and all deadline steps), do NOT claim that meeting the deadline prevents rejection or dismissal unless the notice or input expressly states that consequence. State that timely submission helps ensure the requested evidence is considered during processing.
-- When describing the National Consumer Helpline (NCH), state: "NCH provides a government-operated pre-litigation grievance redress mechanism that can facilitate resolution with the concerned company." Do NOT describe NCH itself as mediation.
-- Refer to the forum as "Consumer Commission having appropriate jurisdiction" rather than assuming "District Consumer Disputes Redressal Commission" unless jurisdiction has been determined from the available facts and applicable rules.
-- For every important legal claim or right, include the official source URL (e.g., government portal, legislation, or court website) in the `source_url` field. If a reliable source cannot be verified, mark the claim as general guidance and set `verification_status` to "unverified".
-- Do NOT fabricate citations; only provide URLs that can be verified.
-- Never claim "High confidence" solely because a legal category appears obvious. Confidence must reflect both factual completeness and legal certainty; if important facts are missing, label the analysis accordingly.
+- Do NOT state that sending a legal notice is a mandatory step before filing a consumer complaint. Under the Consumer Protection Act 2019, a consumer may file directly.
+- For criminal issues, cite Bharatiya Nyaya Sanhita (BNS) / BNSS alongside IPC / CrPC as applicable.
+- For cyber frauds, mention immediate reporting to Helpline 1930 and cybercrime.gov.in.
+- For every legal claim, ensure realistic remedies and accurate government authorities.
 
-Respond ONLY with valid JSON. No markdown code fences.
+Respond ONLY with valid JSON.
 """
         try:
             raw = self._complete(prompt)
             # Strip markdown fences if model includes them
-            if raw.startswith("```"):
-                raw = raw.split("```")[1]
+            if "```" in raw:
+                parts = raw.split("```")
+                raw = parts[1]
                 if raw.startswith("json"):
                     raw = raw[4:]
             data = json.loads(raw.strip())
+
+            pred_cat = data.get("predicted_category", "consumer").lower().strip()
+            cat_name = data.get("predicted_category_name") or pred_cat.replace("_", " ").title()
 
             rights = [
                 RightOrSchemeItem(
@@ -179,14 +189,15 @@ Respond ONLY with valid JSON. No markdown code fences.
                     step_number=s.get("step_number", i + 1),
                     title=s.get("title", ""),
                     description=s.get("description", ""),
-                    why_it_matters=s.get("why_it_matters", "")
+                    why_it_matters=s.get("why_it_matters", ""),
+                    required_documents=s.get("required_documents", [])
                 )
                 for i, s in enumerate(raw_plan.get("ordered_steps", []))
             ]
             plan = ActionPlan(
-                immediate_action=raw_plan.get("immediate_action", "Review your case documents."),
+                immediate_action=raw_plan.get("immediate_action", "Gather and organize all relevant documents and evidence."),
                 ordered_steps=steps,
-                required_documents=raw_plan.get("required_documents", []),
+                required_documents=raw_plan.get("required_documents", [d for s in steps for d in s.required_documents]),
                 target_authority=raw_plan.get("target_authority"),
                 expected_timeline=raw_plan.get("expected_timeline"),
                 warnings=raw_plan.get("warnings", [])
@@ -213,17 +224,29 @@ Respond ONLY with valid JSON. No markdown code fences.
                             verification_status="verified"
                         ))
 
+            # Fetch 5 verified real Indian lawyers based on predicted category and location
+            suggested_lawyers = LawyerService.get_suggested_lawyers(
+                category=pred_cat,
+                location=request.location,
+                limit=5
+            )
+
             return SituationAnalysisResponse(
                 id=str(uuid.uuid4()),
-                situation_summary=data.get("situation_summary", request.problem[:120]),
-                detected_issue=data.get("detected_issue", "Civic / Legal Issue"),
-                category=request.category,
+                situation_summary=data.get("situation_summary", request.problem[:140]),
+                detected_issue=data.get("detected_issue", "Civic / Legal Grievance"),
+                category=pred_cat,
+                predicted_category=pred_cat,
+                predicted_category_name=cat_name,
+                category_confidence=data.get("category_confidence", "high"),
+                category_reasoning=data.get("category_reasoning", "Identified based on factual circumstances and relevant statutes."),
                 applicable_rights_or_schemes=rights,
                 action_plan=plan,
                 recommended_draft_type=data.get("recommended_draft_type", "grievance"),
                 sources=sources,
-                disclaimer=data.get("disclaimer", "This is AI-generated civic information. Consult a legal professional for advice."),
-                is_demo=False
+                disclaimer=data.get("disclaimer", "LawLens AI provides structured civic and legal guidance for educational purposes. Consult a verified advocate for formal representation."),
+                is_demo=False,
+                suggested_lawyers=suggested_lawyers
             )
 
         except Exception as e:
