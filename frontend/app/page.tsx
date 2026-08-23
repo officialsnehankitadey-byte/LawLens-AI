@@ -9,10 +9,10 @@ export default function Home() {
       <section className="relative overflow-hidden border-b border-surface-border">
         {/* Subtle grid background */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-30"
           style={{
             backgroundImage:
-              "linear-gradient(#F0EDE8 1px, transparent 1px), linear-gradient(90deg, #F0EDE8 1px, transparent 1px)",
+              "linear-gradient(var(--border-color) 1px, transparent 1px), linear-gradient(90deg, var(--border-color) 1px, transparent 1px)",
             backgroundSize: "48px 48px",
           }}
         />

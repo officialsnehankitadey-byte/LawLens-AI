@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { HealthStatus, ProblemRequest, SituationAnalysisResponse, DocumentAnalysisResponse, DraftRequest, DraftResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -8,8 +8,32 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000,
+  timeout: 60000, // 60s — AI calls can take time
 });
+
+/**
+ * Converts raw Axios errors into safe, user-facing diagnostic messages.
+ * Never exposes API keys, secrets, or raw stack traces.
+ */
+export function parseApiError(err: unknown): string {
+  const axiosErr = err as AxiosError<{ detail?: string }>;
+  if (axiosErr.code === "ECONNREFUSED" || axiosErr.code === "ERR_NETWORK" || axiosErr.message === "Network Error") {
+    return "Unable to reach the backend server.\n\nTechnical details: Connection refused on http://localhost:8000 — make sure the backend is running (`uvicorn app.main:app --reload --port 8000`).";
+  }
+  if (axiosErr.code === "ECONNABORTED" || axiosErr.message?.includes("timeout")) {
+    return "The analysis request timed out.\n\nTechnical details: No response received from backend within 60 seconds. Try again.";
+  }
+  if (axiosErr.response) {
+    const status = axiosErr.response.status;
+    const detail = axiosErr.response.data?.detail;
+    if (status === 400) return `Invalid request: ${detail || "Please check your input."}`;
+    if (status === 422) return `Validation error: ${detail || "The request format is incorrect."}`;
+    if (status === 500) return `Server error: ${detail || "An internal server error occurred. Check backend logs."}`;
+    if (status === 503) return "The AI service is temporarily unavailable. Please try again in a moment.";
+    return `Server returned HTTP ${status}: ${detail || axiosErr.response.statusText}`;
+  }
+  return `Unexpected error: ${axiosErr.message || "Unknown error. Check the browser console for details."}`;
+}
 
 export const checkHealth = async (): Promise<HealthStatus> => {
   const res = await api.get<HealthStatus>("/health");
@@ -29,6 +53,7 @@ export const analyzeDocument = async (file: File): Promise<DocumentAnalysisRespo
     headers: {
       "Content-Type": "multipart/form-data",
     },
+    timeout: 90000, // 90s for document processing
   });
   return res.data;
 };

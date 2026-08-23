@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { analyzeDocument } from "@/lib/api";
-import { UploadCloud, FileText, Loader2, AlertCircle, X } from "lucide-react";
+import { analyzeDocument, parseApiError } from "@/lib/api";
+import { UploadCloud, FileText, Loader2, AlertCircle, X, Info } from "lucide-react";
 
 export default function DocumentPage() {
   const router = useRouter();
@@ -35,15 +35,33 @@ export default function DocumentPage() {
       setError("Please select a file to upload.");
       return;
     }
+
+    // Check file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File too large. Maximum size is 10 MB.");
+      return;
+    }
+
+    const allowedTypes = [".pdf", ".docx", ".txt"];
+    const ext = "." + file.name.split(".").pop()?.toLowerCase();
+    if (!allowedTypes.includes(ext)) {
+      setError(`Unsupported file type "${ext}". Please upload a PDF, DOCX, or TXT file.`);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
+      console.log("[LawLens] Uploading document:", file.name, file.size);
       const result = await analyzeDocument(file);
+      console.log("[LawLens] Document analysis successful, id:", result.id);
       localStorage.setItem(`doc_analysis_${result.id}`, JSON.stringify(result));
       router.push(`/results/doc_${result.id}`);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to analyze document.");
+    } catch (err: unknown) {
+      const msg = parseApiError(err);
+      console.error("[LawLens] Document upload failed:", err);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -65,11 +83,20 @@ export default function DocumentPage() {
 
       <form onSubmit={handleUpload} className="space-y-5">
 
-        {/* Error */}
+        {/* Error Banner */}
         {error && (
-          <div className="flex items-center gap-2.5 p-3.5 rounded-md bg-danger-muted border border-danger-border text-danger-text text-sm animate-fade-in">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+          <div className="rounded-md bg-danger-muted border border-danger-border animate-fade-in">
+            <div className="flex items-start gap-2.5 p-3.5">
+              <AlertCircle className="h-4 w-4 text-danger-text shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-danger-text mb-1">Upload failed</p>
+                {error.split("\n\n").map((line, i) => (
+                  <p key={i} className={`text-xs leading-relaxed ${i === 0 ? "text-danger-text" : "text-text-muted font-mono mt-1"}`}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -80,13 +107,15 @@ export default function DocumentPage() {
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
           className={`relative flex flex-col items-center justify-center gap-4 p-12 rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 ${
+            loading ? "opacity-60 cursor-not-allowed" : ""
+          } ${
             isDragOver
-              ? "border-brand bg-brand/8 scale-[1.01]"
-              : "border-surface-border bg-surface hover:border-brand/40 hover:bg-brand/4"
+              ? "border-brand bg-brand-muted scale-[1.01]"
+              : "border-surface-border bg-surface hover:border-brand hover:bg-surface-raised"
           }`}
         >
           <div className={`flex items-center justify-center h-12 w-12 rounded-full border border-surface-border transition-colors duration-200 ${
-            isDragOver ? "bg-brand/15 border-brand/40" : "bg-surface-raised"
+            isDragOver ? "bg-brand-muted border-brand" : "bg-surface-raised"
           }`}>
             <UploadCloud className={`h-6 w-6 transition-colors duration-200 ${isDragOver ? "text-brand" : "text-text-muted"}`} />
           </div>
@@ -105,6 +134,7 @@ export default function DocumentPage() {
             accept=".pdf,.docx,.txt"
             onChange={handleFileChange}
             className="sr-only"
+            disabled={loading}
           />
         </label>
 
@@ -112,7 +142,7 @@ export default function DocumentPage() {
         {file && (
           <div className="flex items-center justify-between gap-3 p-3.5 rounded-md bg-surface-raised border border-surface-border animate-fade-in">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex items-center justify-center h-8 w-8 rounded bg-brand/10 border border-brand/20 shrink-0">
+              <div className="flex items-center justify-center h-8 w-8 rounded bg-brand-muted border border-brand shrink-0">
                 <FileText className="h-4 w-4 text-brand" />
               </div>
               <div className="min-w-0">
@@ -123,7 +153,8 @@ export default function DocumentPage() {
             <button
               type="button"
               onClick={clearFile}
-              className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors shrink-0"
+              disabled={loading}
+              className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors shrink-0 disabled:opacity-40"
               aria-label="Remove file"
             >
               <X className="h-4 w-4" />
@@ -150,6 +181,15 @@ export default function DocumentPage() {
             </>
           )}
         </button>
+
+        {loading && (
+          <div className="flex items-center gap-2 p-3 rounded-md bg-surface-raised border border-surface-border animate-fade-in">
+            <Info className="h-3.5 w-3.5 text-text-muted shrink-0" />
+            <p className="text-xs text-text-muted">
+              Document analysis may take up to 30 seconds. Please wait…
+            </p>
+          </div>
+        )}
       </form>
 
       {/* Supported types note */}

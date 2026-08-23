@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { analyzeProblem } from "@/lib/api";
-import { Search, Loader2, AlertCircle, ChevronRight } from "lucide-react";
+import { analyzeProblem, parseApiError } from "@/lib/api";
+import { Search, Loader2, AlertCircle, ChevronRight, Info } from "lucide-react";
 
 const DEMO_SCENARIOS = [
   {
@@ -16,6 +16,11 @@ const DEMO_SCENARIOS = [
     text: "I want to request official fund allocation records for a local road construction project.",
     category: "rti",
   },
+  {
+    label: "Motor Vehicle Accident",
+    text: "My car was involved in an accident and I do not have insurance. What should I do?",
+    category: "consumer",
+  },
 ];
 
 export default function AnalyzePage() {
@@ -25,6 +30,7 @@ export default function AnalyzePage() {
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isSubmitting = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,17 +38,26 @@ export default function AnalyzePage() {
       setError("Please describe your problem before continuing.");
       return;
     }
+    // Prevent duplicate concurrent requests
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
+
     setError("");
     setLoading(true);
 
     try {
+      console.log("[LawLens] Sending analysis request to backend...", { problem: problem.slice(0, 80), category, location });
       const result = await analyzeProblem({ problem, category, location });
+      console.log("[LawLens] Analysis successful, id:", result.id, "is_demo:", result.is_demo);
       localStorage.setItem(`analysis_${result.id}`, JSON.stringify(result));
       router.push(`/results/${result.id}`);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to complete analysis. Please try again.");
+    } catch (err: unknown) {
+      const msg = parseApiError(err);
+      console.error("[LawLens] Analysis failed:", err);
+      setError(msg);
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 
@@ -66,11 +81,20 @@ export default function AnalyzePage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* Error */}
+        {/* Error Banner */}
         {error && (
-          <div className="flex items-center gap-2.5 p-3.5 rounded-md bg-danger-muted border border-danger-border text-danger-text text-sm animate-fade-in">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+          <div className="rounded-md bg-danger-muted border border-danger-border animate-fade-in">
+            <div className="flex items-start gap-2.5 p-3.5">
+              <AlertCircle className="h-4 w-4 text-danger-text shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-danger-text mb-1">Unable to complete analysis</p>
+                {error.split("\n\n").map((line, i) => (
+                  <p key={i} className={`text-xs leading-relaxed ${i === 0 ? "text-danger-text" : "text-text-muted font-mono mt-1"}`}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -85,8 +109,9 @@ export default function AnalyzePage() {
             rows={6}
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
-            placeholder="e.g., An online seller delivered a damaged product and is refusing to refund my payment despite multiple follow-ups…"
+            placeholder="e.g., My car was involved in an accident and I do not have insurance. What should I do?"
             className="input-base resize-none font-sans leading-relaxed"
+            disabled={loading}
           />
           <p className="text-xs text-text-muted">
             Be specific — include what happened, who is involved, and when.
@@ -104,6 +129,7 @@ export default function AnalyzePage() {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="select-base"
+              disabled={loading}
             >
               <option value="consumer">Consumer Complaint</option>
               <option value="rti">RTI Request</option>
@@ -126,6 +152,7 @@ export default function AnalyzePage() {
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g., Delhi, Karnataka, Maharashtra"
               className="input-base"
+              disabled={loading}
             />
           </div>
         </div>
@@ -134,13 +161,13 @@ export default function AnalyzePage() {
         <button
           type="submit"
           id="analyze-submit"
-          disabled={loading}
+          disabled={loading || !problem.trim()}
           className="btn-primary w-full py-3 text-sm"
         >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Analyzing situation &amp; rights…
+              Analyzing your situation &amp; rights…
             </>
           ) : (
             <>
@@ -150,6 +177,16 @@ export default function AnalyzePage() {
             </>
           )}
         </button>
+
+        {/* Loading note */}
+        {loading && (
+          <div className="flex items-center gap-2 p-3 rounded-md bg-surface-raised border border-surface-border animate-fade-in">
+            <Info className="h-3.5 w-3.5 text-text-muted shrink-0" />
+            <p className="text-xs text-text-muted">
+              Analysis may take 15–30 seconds if the AI service is active. Please wait…
+            </p>
+          </div>
+        )}
       </form>
 
       {/* Demo scenarios */}
@@ -159,8 +196,10 @@ export default function AnalyzePage() {
           {DEMO_SCENARIOS.map((s) => (
             <button
               key={s.label}
+              type="button"
               onClick={() => loadDemoScenario(s.text, s.category)}
-              className="text-xs px-3.5 py-2 rounded-md bg-surface-raised border border-surface-border text-text-secondary hover:text-text-primary hover:border-surface-borderHover transition-all duration-150"
+              disabled={loading}
+              className="text-xs px-3.5 py-2 rounded-md bg-surface-raised border border-surface-border text-text-secondary hover:text-text-primary hover:border-surface-borderHover transition-all duration-100 active:scale-[0.97] disabled:opacity-40"
             >
               {s.label}
             </button>

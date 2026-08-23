@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { generateDraft } from "@/lib/api";
+import { generateDraft, parseApiError } from "@/lib/api";
 import { DraftResponse } from "@/lib/types";
 import { Copy, Download, RefreshCw, FileText, Check, AlertCircle, Loader2 } from "lucide-react";
 
@@ -17,26 +17,28 @@ function DraftForm() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
-  const loadDraft = async () => {
+  const loadDraft = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
+      console.log("[LawLens] Generating draft:", { draft_type: draftType, summary: summaryParam.slice(0, 80) });
       const result = await generateDraft({
         draft_type: draftType,
         case_summary: summaryParam,
       });
+      console.log("[LawLens] Draft generated:", result.draft_id);
       setDraft(result);
       setContent(result.content);
-    } catch (err: any) {
-      setError("Failed to generate draft. Please try again.");
+    } catch (err: unknown) {
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, [draftType, summaryParam]);
 
   useEffect(() => {
     loadDraft();
-  }, [draftType]);
+  }, [loadDraft]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -132,13 +134,13 @@ function DraftForm() {
             rows={22}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full p-6 font-mono text-sm bg-[#111111] text-text-primary placeholder:text-text-muted leading-relaxed focus:outline-none resize-none"
+            className="w-full p-6 font-mono text-sm bg-surface-raised text-text-primary placeholder:text-text-muted leading-relaxed focus:outline-none resize-none"
             placeholder="Your document draft will appear here…"
           />
 
           {/* Placeholders note */}
           {draft?.placeholders_used && draft.placeholders_used.length > 0 && (
-            <div className="px-5 py-3.5 border-t border-surface-border bg-warning-muted/30">
+            <div className="px-5 py-3.5 border-t border-surface-border bg-warning-muted">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-3.5 w-3.5 text-warning-text shrink-0 mt-0.5" />
                 <div className="space-y-2">

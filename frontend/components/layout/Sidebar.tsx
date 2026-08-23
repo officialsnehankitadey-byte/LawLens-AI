@@ -10,6 +10,7 @@ interface SidebarProps {
   toggleSidebar: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onItemClick?: () => void;
 }
 
 export default function Sidebar({
@@ -18,6 +19,7 @@ export default function Sidebar({
   toggleSidebar,
   onMouseEnter,
   onMouseLeave,
+  onItemClick,
 }: SidebarProps) {
   const pathname = usePathname();
 
@@ -33,15 +35,15 @@ export default function Sidebar({
     <aside
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`fixed top-0 left-0 z-40 h-full w-64 bg-[#0E0E0E] border-r border-surface-border shadow-panel-lg transform transition-transform duration-300 ease-in-out flex flex-col pt-14 ${
+      className={`fixed top-0 left-0 z-40 h-full w-64 bg-surface border-r border-surface-border shadow-panel-lg transform transition-transform duration-200 ease-in-out flex flex-col pt-14 ${
         open ? "translate-x-0" : "-translate-x-full"
       }`}
     >
       {/* Brand area inside sidebar */}
       <div className="px-4 py-4 border-b border-surface-border">
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center h-6 w-6 rounded bg-brand shrink-0">
-            <Scale className="h-3.5 w-3.5 text-base-950" strokeWidth={2.5} />
+          <div className="flex items-center justify-center h-6 w-6 rounded bg-brand text-text-inverse shrink-0">
+            <Scale className="h-3.5 w-3.5" strokeWidth={2.5} />
           </div>
           <span className="text-sm font-semibold text-text-primary tracking-tight">Navigation</span>
         </div>
@@ -57,14 +59,16 @@ export default function Sidebar({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 group ${
+                prefetch={true}
+                onClick={onItemClick}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-100 group active:scale-[0.98] select-none cursor-pointer ${
                   isActive
-                    ? "bg-brand/10 text-brand"
+                    ? "bg-brand/15 text-brand font-semibold"
                     : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
                 }`}
               >
                 {/* Active indicator */}
-                <div className={`w-0.5 h-4 rounded-full transition-all duration-150 shrink-0 ${
+                <div className={`w-0.5 h-4 rounded-full transition-all duration-100 shrink-0 ${
                   isActive ? "bg-brand" : "bg-transparent group-hover:bg-surface-border"
                 }`} />
                 <Icon className={`h-4 w-4 shrink-0 transition-colors ${
@@ -84,8 +88,9 @@ export default function Sidebar({
             {isPinned ? "Sidebar pinned" : "Hover preview"}
           </span>
           <button
+            type="button"
             onClick={toggleSidebar}
-            className="text-xs font-medium text-brand hover:text-brand-light transition-colors"
+            className="text-xs font-medium text-brand hover:text-brand-light transition-colors active:scale-95 cursor-pointer"
           >
             {isPinned ? "Unpin" : "Pin open"}
           </button>
