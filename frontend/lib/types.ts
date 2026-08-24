@@ -150,3 +150,71 @@ export interface DraftResponse {
   editable: boolean;
   disclaimer: string;
 }
+
+export interface SchemeCheckRequest {
+  scheme_name: string;
+  user_criteria?: Record<string, string>;
+  location?: string;
+  language?: string;
+}
+
+export interface CriterionAssessment {
+  criterion: string;
+  requirement: string;
+  your_status: string;
+  met: "yes" | "no" | "unknown";
+}
+
+export interface SchemeCheckResponse {
+  scheme_name: string;
+  verdict: "eligible" | "likely_eligible" | "likely_ineligible" | "needs_info";
+  plain_language_summary?: string;
+  known_criteria: string[];
+  criterion_assessment: CriterionAssessment[];
+  missing_information: string[];
+  eligible_assessment: string;
+  required_documents: string[];
+  next_action: string;
+  follow_up_questions?: string[];
+  source_url?: string;
+  is_demo: boolean;
+}
+
+export interface InterviewQuestion {
+  field_key: string;
+  question: string;
+  answer_type: string;
+  options?: string[];
+  required?: boolean;
+  help_text?: string;
+}
+
+export interface InterviewStartRequest {
+  draft_type: string;
+  case_summary: string;
+}
+
+export interface InterviewStartResponse {
+  interview_id: string;
+  draft_type: string;
+  title: string;
+  questions: InterviewQuestion[];
+}
+
+export interface InterviewSubmitRequest {
+  interview_id?: string;
+  draft_type: string;
+  case_summary: string;
+  answers?: Record<string, string>;
+  target_authority?: string;
+  specific_demands?: string[];
+}
+
+export interface AuthorityRouting {
+  authority_name: string;
+  department: string;
+  jurisdiction?: string;
+  submission_method?: string;
+  portal_url?: string;
+  notes?: string;
+}

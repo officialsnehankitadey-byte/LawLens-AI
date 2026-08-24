@@ -1,3 +1,4 @@
+import logging
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -12,9 +13,19 @@ from app.services.authority import AuthorityRouter
 from app.services.ai import build_ai_provider
 from app.models.schemas import DraftRequest
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 VALID_TYPES = {"rti", "consumer_complaint", "grievance", "appeal"}
+
+
+def draft_type_to_category(draft_type: str) -> str:
+    return {
+        "rti": "rti",
+        "consumer_complaint": "consumer",
+        "grievance": "other",
+        "appeal": "notice",
+    }.get(draft_type.lower(), "other")
 
 
 @router.post("/interview/start", response_model=InterviewStartResponse)
@@ -66,12 +77,3 @@ async def submit_interview(request: InterviewSubmitRequest):
 
     provider = build_ai_provider()
     return await provider.generate_draft(draft_request)
-
-
-def draft_type_to_category(draft_type: str) -> str:
-    return {
-        "rti": "rti",
-        "consumer_complaint": "consumer",
-        "grievance": "other",
-        "appeal": "notice",
-    }.get(draft_type, "other")

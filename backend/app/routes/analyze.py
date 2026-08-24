@@ -1,8 +1,10 @@
+import logging
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import ProblemRequest, SituationAnalysisResponse, AuthorityRouting
 from app.services.ai import build_ai_provider
 from app.services.authority import AuthorityRouter
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -22,8 +24,8 @@ def attach_authority_routing(
         response.authority_routing = routing
         if not response.action_plan.target_authority:
             response.action_plan.target_authority = routing.authority_name
-    except Exception:
-        pass  # Routing is an enhancement; never fail the analysis over it.
+    except Exception as e:
+        logger.warning(f"Authority routing failed: {e}")
     return response
 
 

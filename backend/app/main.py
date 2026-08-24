@@ -11,11 +11,12 @@ app = FastAPI(
 
 # Configure CORS Middleware safely
 origins = settings.get_cors_origins()
+use_wildcard = not origins
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins if origins else ["*"],
-    allow_credentials=True,
+    allow_credentials=not use_wildcard,
     allow_methods=["*"],
     allow_headers=["*"],
 )

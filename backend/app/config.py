@@ -1,6 +1,7 @@
 import os
 from typing import List, Union
 
+from pydantic import BaseModel
 try:
     from pydantic_settings import BaseSettings
 except ImportError:
@@ -8,6 +9,11 @@ except ImportError:
         from pydantic import BaseSettings  # type: ignore
     except ImportError:
         from pydantic.v1 import BaseSettings  # type: ignore
+
+try:
+    from pydantic import SettingsConfigDict
+except ImportError:
+    from pydantic import ConfigDict as SettingsConfigDict  # type: ignore
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "LawLens AI"
@@ -40,8 +46,6 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
         return list(self.CORS_ORIGINS)
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
